@@ -217,14 +217,40 @@
 
 \section{Introduction}\label{introduction}
 
-This report walks through a pedagogical analysis of a subset of the
+This report walks through an analysis of a subset of the
 \texttt{machines} data from the \texttt{rrcov} package (rows
-\textbf{hp-3000/64} to \textbf{ibm-4331-2}). Goals: - Describe the
-variables with both classical and robust summaries. - Run PCA on the raw
-scale and on standardized variables; compare explained variance and
-choose components that keep ≥95\% of total variance. - Study the impact
-of a deliberately injected outlier using classical PCA and a robust PCA
-based on the Minimum Covariance Determinant (MCD).
+\textbf{hp-3000/64} to \textbf{ibm-4331-2}).
+
+Goals:
+
+- Describe the variables with classical and robust summaries and simple
+visuals.
+
+- Run PCA on the raw scale and on standardized variables; keep ≥95\%
+total variance.
+
+- Study the effect of an injected outlier using classical PCA and a
+robust PCA (MCD).
+
+\section{Study plan (at a glance)}\label{study-plan-at-a-glance}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\tightlist
+\item
+  Inspect the data: structure, variable meaning, rough scales.\\
+\item
+  Classical and robust summaries to see skew/tails and dependence
+  (covariance, distances).\\
+\item
+  PCA on raw vs standardized variables; compare variance explained and
+  loadings; pick components reaching 95\%.\\
+\item
+  Inject one outlier and compare classical vs robust PCA to illustrate
+  sensitivity.\\
+\item
+  Conclude and state a recommendation for which PCA to report and why.
+\end{enumerate}
 
 \section{Setup and data}\label{setup-and-data}
 
@@ -238,6 +264,9 @@ based on the Minimum Covariance Determinant (MCD).
 \NormalTok{machines\_sub }\OtherTok{\textless{}{-}}\NormalTok{ machines[}\DecValTok{71}\SpecialCharTok{:}\DecValTok{111}\NormalTok{, ]                  }\CommentTok{\# hp{-}3000/64 ... ibm{-}4331{-}2}
 \NormalTok{machines\_sub}\SpecialCharTok{$}\NormalTok{machine }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(machines\_sub)      }\CommentTok{\# keep names for plotting}
 \FunctionTok{rownames}\NormalTok{(machines\_sub) }\OtherTok{\textless{}{-}} \ConstantTok{NULL}
+
+\NormalTok{n\_obs }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(machines\_sub)}
+\NormalTok{n\_vars }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(machines\_sub) }\SpecialCharTok{{-}} \DecValTok{1}                    \CommentTok{\# numeric variables only}
 
 \FunctionTok{head}\NormalTok{(machines\_sub, }\DecValTok{3}\NormalTok{)}
 \end{Highlighting}
@@ -280,6 +309,41 @@ based on the Minimum Covariance Determinant (MCD).
                    
 \end{verbatim}
 
+\section{Data description}\label{data-description}
+
+\begin{itemize}
+\tightlist
+\item
+  Observations: 41 machines; numeric variables: 8.
+\item
+  Variables (all numeric):
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \texttt{MYCT} cycle time (ns), \texttt{MMIN} min memory (KB),
+    \texttt{MMAX} max memory (KB), \texttt{CACH} cache (KB),\\
+  \item
+    \texttt{CHMIN} min channels, \texttt{CHMAX} max channels,
+    \texttt{PRP} published perf, \texttt{ERP} estimated perf.\\
+  \end{itemize}
+\item
+  Machine IDs live in \texttt{machine} (formerly row names). Use them
+  for labels, not for analysis.
+\end{itemize}
+
+Quick look at the machine names:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(machines\_sub}\SpecialCharTok{$}\NormalTok{machine, }\DecValTok{5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] "hp-3000/64"  "hp-3000/88"  "hp-3000/iii" "harris-100"  "harris-300" 
+\end{verbatim}
+
 Helper functions for trimmed/winsorized means and total/generalized
 variance:
 
@@ -299,6 +363,9 @@ variance:
 
 \subsection{Classical vs robust
 location/scale}\label{classical-vs-robust-locationscale}
+
+Focus: see how skew and heavy tails affect means; compare to
+median/trimmed/winsor/MAD.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -342,6 +409,9 @@ ERP   7.182780e+03   17.7912
 
 \subsection{Covariance, total and generalized
 variance}\label{covariance-total-and-generalized-variance}
+
+These give a sense of joint spread; generalized variance is the
+log-determinant (stable on the log scale).
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -390,20 +460,72 @@ attr(,"logarithm")
 \subsection{Mahalanobis distances
 (classical)}\label{mahalanobis-distances-classical}
 
+Note: the squared Mahalanobis distance is approximately chi-square with
+\texttt{p} degrees of freedom (\texttt{p} = number of numeric
+variables). Using the 97.5th percentile cutoff marks points that are
+unusually far from the multivariate center (potential joint outliers).
+
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{md }\OtherTok{\textless{}{-}} \FunctionTok{mahalanobis}\NormalTok{(num\_vars, }\AttributeTok{center =} \FunctionTok{colMeans}\NormalTok{(num\_vars), }\AttributeTok{cov =}\NormalTok{ S\_classic)}
-\NormalTok{cutoff }\OtherTok{\textless{}{-}} \FunctionTok{qchisq}\NormalTok{(}\FloatTok{0.975}\NormalTok{, }\AttributeTok{df =} \FunctionTok{ncol}\NormalTok{(num\_vars))}
+\NormalTok{md }\OtherTok{\textless{}{-}} \FunctionTok{mahalanobis}\NormalTok{(}
+\NormalTok{  num\_vars,}
+  \AttributeTok{center =} \FunctionTok{colMeans}\NormalTok{(num\_vars),        }\CommentTok{\# classic mean vector}
+  \AttributeTok{cov =}\NormalTok{ S\_classic                     }\CommentTok{\# classic covariance matrix}
+\NormalTok{)}
+\NormalTok{cutoff }\OtherTok{\textless{}{-}} \FunctionTok{qchisq}\NormalTok{(}\FloatTok{0.975}\NormalTok{, }\AttributeTok{df =} \FunctionTok{ncol}\NormalTok{(num\_vars))  }\CommentTok{\# 97.5\% chi{-}square threshold}
 
 \FunctionTok{plot}\NormalTok{(md, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{, }\AttributeTok{main =} \StringTok{"Mahalanobis distances"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"Distance"}\NormalTok{)}
 \FunctionTok{abline}\NormalTok{(}\AttributeTok{h =}\NormalTok{ cutoff, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-6-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-7-1.pdf}}
+
+Interpretation: most machines sit well below the 97.5\% chi-square
+cutoff (≈17.5 for 8 vars), suggesting a fairly homogeneous core. About 5
+machines breach the line (one extreme around index 25, another near 13,
+plus a few clustered neighbors), meaning their joint profiles are
+atypical -- e.g., unusual combinations of cycle time, memory, and cache.
+Because classical mean/covariance can mask extremes, a robust
+Mahalanobis distance (MCD) would likely push these points even higher
+and could flag borderline cases too. To dig deeper, we can inspect those
+machine IDs and build contribution plots to see which variables drive
+their distances.
+
+Which machines exceed the cutoff?
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{machine\_ids }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(machines)[}\DecValTok{71}\SpecialCharTok{:}\DecValTok{111}\NormalTok{]  }\CommentTok{\# names for this slice of the data}
+\NormalTok{flagged }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(md }\SpecialCharTok{\textgreater{}}\NormalTok{ cutoff)}
+
+\FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{index =}\NormalTok{ flagged,}
+  \AttributeTok{machine =}\NormalTok{ machine\_ids[flagged],}
+  \AttributeTok{distance =} \FunctionTok{round}\NormalTok{(md[flagged], }\DecValTok{2}\NormalTok{)}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+  index            machine distance
+1    13 honeywell-dps:6/96    22.52
+2    25         ibm-3033:u    26.82
+3    26           ibm-3081    23.13
+4    27         ibm-3081:d    23.20
+5    28         ibm-3083:b    19.11
+\end{verbatim}
+
+These IDs correspond to the spikes in the plot; each mixes unusually
+large/small values across the hardware specs. Next step: contribution
+plots (variable-wise breakdown of the distance) or a robust Mahalanobis
+distance to confirm and prioritize which are true multivariate outliers.
 
 \section{Principal Component Analysis (original vs
 standardized)}\label{principal-component-analysis-original-vs-standardized}
+
+We compare PCA on raw scales (keeps original units) vs standardized
+(puts variables on equal footing).
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -417,6 +539,8 @@ standardized)}\label{principal-component-analysis-original-vs-standardized}
 
 \subsection{Scree plots and variance
 explained}\label{scree-plots-and-variance-explained}
+
+Red line marks 95\% cumulative variance target.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -433,7 +557,7 @@ explained}\label{scree-plots-and-variance-explained}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-10-1.pdf}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -462,6 +586,9 @@ explained}\label{scree-plots-and-variance-explained}
 
 \subsection{Loadings and interpretation
 aids}\label{loadings-and-interpretation-aids}
+
+Inspect which variables drive the first PCs (signs may flip without
+changing interpretation).
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -498,6 +625,9 @@ CHMAX -0.1386368  0.79963560 -0.15685676
 \subsection{Scores plot (first two
 PCs)}\label{scores-plot-first-two-pcs}
 
+Use labels to spot grouping and extremes; standardized version is shown
+here.
+
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{scores\_std }\OtherTok{\textless{}{-}} \FunctionTok{as.data.frame}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{x)}
@@ -511,7 +641,7 @@ PCs)}\label{scores-plot-first-two-pcs}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-11-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-13-1.pdf}}
 
 \section{Outlier experiment}\label{outlier-experiment}
 
@@ -552,6 +682,9 @@ standardization).
 
 \subsection{Visual comparison: scores}\label{visual-comparison-scores}
 
+Outlier effect: in classical PCA, the first axis often aligns with the
+extreme point; robust PCA should stay closer to the bulk structure.
+
 \begin{Shaded}
 \begin{Highlighting}[]
 \FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{))}
@@ -567,7 +700,7 @@ standardization).
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-13-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-15-1.pdf}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -584,7 +717,7 @@ PCA)}\label{distance-diagnostics-robust-pca}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-14-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-16-1.pdf}}
 
 \section{Decisions and conclusions}\label{decisions-and-conclusions}
 
@@ -606,6 +739,14 @@ PCA)}\label{distance-diagnostics-robust-pca}
   scales differ), how many components you keep (based on the 95\% rule),
   and how the outlier analysis supports the robustness choice.
 \end{itemize}
+
+Suggestion for the written summary (fill in after rendering): - Data
+shape and key variable ranges; any clear skew or heavy tails. - Which
+PCA you selected (raw vs standardized), how many PCs kept for 95\%, and
+how you interpret PC1/PC2 loadings. - What changed after adding the
+outlier; how robust PCA mitigated it. - Brief limitations (small sample,
+historical hardware data) and next steps (e.g., more robust checks or
+alternative outlier rules).
 
 \section{Bibliography}\label{bibliography}
 

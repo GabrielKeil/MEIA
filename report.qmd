@@ -21,22 +21,23 @@ editor: visual
 
 # Introduction
 
-This report walks through a pedagogical analysis of a subset of the `machines` data from the `rrcov` package (rows **hp-3000/64** to **ibm-4331-2**).
+This report walks through an analysis of a subset of the `machines` data from the `rrcov` package (rows **hp-3000/64** to **ibm-4331-2**).
 
 Goals:
-- Describe the variables with classical and robust summaries and simple visuals.
-- Run PCA on the raw scale and on standardized variables; keep ≥95% total variance.
-- Study the effect of an injected outlier using classical PCA and a robust PCA (MCD).
 
-Intended reader: someone new to these techniques. Each section explains why a step is run and how to read the output.
+\- Describe the variables with classical and robust summaries and simple visuals.
+
+\- Run PCA on the raw scale and on standardized variables; keep ≥95% total variance.
+
+\- Study the effect of an injected outlier using classical PCA and a robust PCA (MCD).
 
 # Study plan (at a glance)
 
-1) Inspect the data: structure, variable meaning, rough scales.  
-2) Classical and robust summaries to see skew/tails and dependence (covariance, distances).  
-3) PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.  
-4) Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.  
-5) Conclude and state a recommendation for which PCA to report and why.
+1)  Inspect the data: structure, variable meaning, rough scales.\
+2)  Classical and robust summaries to see skew/tails and dependence (covariance, distances).\
+3)  PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.\
+4)  Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.\
+5)  Conclude and state a recommendation for which PCA to report and why.
 
 # Setup and data
 
@@ -62,11 +63,11 @@ summary(machines_sub)
 
 # Data description
 
-- Observations: `r n_obs` machines; numeric variables: `r n_vars`.
-- Variables (all numeric):  
-  - `MYCT` cycle time (ns), `MMIN` min memory (KB), `MMAX` max memory (KB), `CACH` cache (KB),  
-  - `CHMIN` min channels, `CHMAX` max channels, `PRP` published perf, `ERP` estimated perf.  
-- Machine IDs live in `machine` (formerly row names). Use them for labels, not for analysis.
+-   Observations: `r n_obs` machines; numeric variables: `r n_vars`.
+-   Variables (all numeric):
+    -   `MYCT` cycle time (ns), `MMIN` min memory (KB), `MMAX` max memory (KB), `CACH` cache (KB),\
+    -   `CHMIN` min channels, `CHMAX` max channels, `PRP` published perf, `ERP` estimated perf.\
+-   Machine IDs live in `machine` (formerly row names). Use them for labels, not for analysis.
 
 Quick look at the machine names:
 
@@ -127,15 +128,36 @@ list(
 
 ## Mahalanobis distances (classical)
 
-Large values (above the chi-square cutoff) suggest unusual joint profiles.
+Note: the squared Mahalanobis distance is approximately chi-square with `p` degrees of freedom (`p` = number of numeric variables). Using the 97.5th percentile cutoff marks points that are unusually far from the multivariate center (potential joint outliers).
 
 ```{r}
-md <- mahalanobis(num_vars, center = colMeans(num_vars), cov = S_classic)
-cutoff <- qchisq(0.975, df = ncol(num_vars))
+md <- mahalanobis(
+  num_vars,
+  center = colMeans(num_vars),        # classic mean vector
+  cov = S_classic                     # classic covariance matrix
+)
+cutoff <- qchisq(0.975, df = ncol(num_vars))  # 97.5% chi-square threshold
 
 plot(md, pch = 19, main = "Mahalanobis distances", ylab = "Distance")
 abline(h = cutoff, col = "red", lty = 2)
 ```
+
+Interpretation: most machines sit well below the 97.5% chi-square cutoff (≈17.5 for 8 vars), suggesting a fairly homogeneous core. About 5 machines breach the line (one extreme around index 25, another near 13, plus a few clustered neighbors), meaning their joint profiles are atypical – e.g., unusual combinations of cycle time, memory, and cache. Because classical mean/covariance can mask extremes, a robust Mahalanobis distance (MCD) would likely push these points even higher and could flag borderline cases too. To dig deeper, we can inspect those machine IDs and build contribution plots to see which variables drive their distances.
+
+Which machines exceed the cutoff?
+
+```{r}
+machine_ids <- rownames(machines)[71:111]  # names for this slice of the data
+flagged <- which(md > cutoff)
+
+data.frame(
+  index = flagged,
+  machine = machine_ids[flagged],
+  distance = round(md[flagged], 2)
+)
+```
+
+These IDs correspond to the spikes in the plot; each mixes unusually large/small values across the hardware specs. Next step: contribution plots (variable-wise breakdown of the distance) or a robust Mahalanobis distance to confirm and prioritize which are true multivariate outliers.
 
 # Principal Component Analysis (original vs standardized)
 
@@ -255,11 +277,7 @@ plot(pca_out_robust)  # outlier map: orthogonal vs score distances
 -   With the injected outlier, classical PCA reorients strongly toward the extreme point (variance inflation, first PC dominated by the outlier). The MCD-based PCA keeps stable directions and variance shares.
 -   For reporting: state which PCA you recommend (often standardized if scales differ), how many components you keep (based on the 95% rule), and how the outlier analysis supports the robustness choice.
 
-Suggestion for the written summary (fill in after rendering):
-- Data shape and key variable ranges; any clear skew or heavy tails.
-- Which PCA you selected (raw vs standardized), how many PCs kept for 95%, and how you interpret PC1/PC2 loadings.
-- What changed after adding the outlier; how robust PCA mitigated it.
-- Brief limitations (small sample, historical hardware data) and next steps (e.g., more robust checks or alternative outlier rules).
+Suggestion for the written summary (fill in after rendering): - Data shape and key variable ranges; any clear skew or heavy tails. - Which PCA you selected (raw vs standardized), how many PCs kept for 95%, and how you interpret PC1/PC2 loadings. - What changed after adding the outlier; how robust PCA mitigated it. - Brief limitations (small sample, historical hardware data) and next steps (e.g., more robust checks or alternative outlier rules).
 
 # Bibliography
 
