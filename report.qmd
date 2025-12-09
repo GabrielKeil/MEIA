@@ -1,0 +1,213 @@
+---
+title: "PCA and Outlier Analysis on Machines Data"
+author: Grupo
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    df-print: paged
+  pdf:
+    toc: true
+    toc-depth: 3
+number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+# Introduction
+
+This report walks through a pedagogical analysis of a subset of the `machines` data from the `rrcov` package (rows **hp-3000/64** to **ibm-4331-2**). Goals: - Describe the variables with both classical and robust summaries. - Run PCA on the raw scale and on standardized variables; compare explained variance and choose components that keep ≥95% of total variance. - Study the impact of a deliberately injected outlier using classical PCA and a robust PCA based on the Minimum Covariance Determinant (MCD).
+
+# Setup and data
+
+```{r}
+# install.packages(c("rrcov", "robustbase"), repos = "https://cloud.r-project.org")
+library(rrcov)
+library(robustbase)
+
+data(machines)
+machines_sub <- machines[71:111, ]                  # hp-3000/64 ... ibm-4331-2
+machines_sub$machine <- rownames(machines_sub)      # keep names for plotting
+rownames(machines_sub) <- NULL
+
+head(machines_sub, 3)
+```
+
+```{r}
+summary(machines_sub)
+```
+
+Helper functions for trimmed/winsorized means and total/generalized variance:
+
+```{r}
+winsor_mean <- function(x, probs = c(0.05, 0.95)) {
+  qs <- quantile(x, probs, names = FALSE)
+  mean(pmin(pmax(x, qs[1]), qs[2]))
+}
+
+total_variance <- function(S) sum(diag(S))
+generalized_variance <- function(S) determinant(S, logarithm = TRUE)$modulus
+```
+
+# Exploratory summaries
+
+## Classical vs robust location/scale
+
+```{r}
+num_vars <- machines_sub[ , setdiff(names(machines_sub), "machine")]
+
+stat_table <- data.frame(
+  variable = names(num_vars),
+  mean = sapply(num_vars, mean),
+  median = sapply(num_vars, median),
+  trimmed_mean = sapply(num_vars, mean, trim = 0.1),
+  winsor_mean = sapply(num_vars, winsor_mean),
+  sd = sapply(num_vars, sd),
+  var = sapply(num_vars, var),
+  mad = sapply(num_vars, mad)
+)
+
+stat_table
+```
+
+## Covariance, total and generalized variance
+
+```{r}
+S_classic <- cov(num_vars)
+total_var <- total_variance(S_classic)
+gen_var_log <- generalized_variance(S_classic)  # log-determinant for stability
+
+list(
+  covariance_matrix = S_classic,
+  total_variance = total_var,
+  generalized_variance_log = gen_var_log
+)
+```
+
+## Mahalanobis distances (classical)
+
+```{r}
+md <- mahalanobis(num_vars, center = colMeans(num_vars), cov = S_classic)
+cutoff <- qchisq(0.975, df = ncol(num_vars))
+
+plot(md, pch = 19, main = "Mahalanobis distances", ylab = "Distance")
+abline(h = cutoff, col = "red", lty = 2)
+```
+
+# Principal Component Analysis (original vs standardized)
+
+```{r}
+pca_raw <- prcomp(num_vars, center = TRUE, scale. = FALSE)
+pca_std <- prcomp(num_vars, center = TRUE, scale. = TRUE)
+
+pve_raw <- pca_raw$sdev^2 / sum(pca_raw$sdev^2)
+pve_std <- pca_std$sdev^2 / sum(pca_std$sdev^2)
+```
+
+## Scree plots and variance explained
+
+```{r}
+par(mfrow = c(1, 2))
+plot(pve_raw * 100, type = "b", pch = 19, xlab = "PC", ylab = "% variance",
+     main = "Raw scale")
+lines(cumsum(pve_raw) * 100, type = "b", col = "blue")
+abline(h = 95, col = "red", lty = 2)
+
+plot(pve_std * 100, type = "b", pch = 19, xlab = "PC", ylab = "% variance",
+     main = "Standardized")
+lines(cumsum(pve_std) * 100, type = "b", col = "blue")
+abline(h = 95, col = "red", lty = 2)
+par(mfrow = c(1, 1))
+```
+
+```{r}
+k_raw <- which(cumsum(pve_raw) >= 0.95)[1]
+k_std <- which(cumsum(pve_std) >= 0.95)[1]
+
+data.frame(
+  scale = c("raw", "standardized"),
+  pcs_needed_for_95pct = c(k_raw, k_std),
+  cumulative_variance = c(cumsum(pve_raw)[k_raw], cumsum(pve_std)[k_std])
+)
+```
+
+## Loadings and interpretation aids
+
+```{r}
+head(pca_raw$rotation[, 1:min(3, ncol(num_vars))])
+head(pca_std$rotation[, 1:min(3, ncol(num_vars))])
+```
+
+## Scores plot (first two PCs)
+
+```{r}
+scores_std <- as.data.frame(pca_std$x)
+scores_std$machine <- machines_sub$machine
+
+plot(scores_std$PC1, scores_std$PC2, pch = 19,
+     xlab = "PC1 (std)", ylab = "PC2 (std)",
+     main = "Scores on standardized data")
+text(scores_std$PC1, scores_std$PC2, labels = scores_std$machine,
+     pos = 3, cex = 0.6)
+```
+
+# Outlier experiment
+
+Introduce the atypical point at the former `hp-3000/64` row (no standardization).
+
+```{r}
+xnew <- c(75, 2000, 0.8, 80000, 300, 24, 62, 47)
+machines_out <- machines_sub
+machines_out[machines_out$machine == "hp-3000/64", names(num_vars)] <- xnew
+
+pca_out_classic <- prcomp(machines_out[names(num_vars)], center = TRUE, scale. = FALSE)
+pca_out_robust <- PcaCov(machines_out[names(num_vars)], cov.control = CovControlMcd(), scale = FALSE)
+
+pve_out_classic <- pca_out_classic$sdev^2 / sum(pca_out_classic$sdev^2)
+pve_out_robust <- pca_out_robust@eigenvalues / sum(pca_out_robust@eigenvalues)
+
+data.frame(
+  component = seq_along(pve_out_classic),
+  classic_pct = round(pve_out_classic * 100, 2),
+  robust_pct = round(pve_out_robust * 100, 2)
+)
+```
+
+## Visual comparison: scores
+
+```{r}
+par(mfrow = c(1, 2))
+plot(pca_out_classic$x[,1], pca_out_classic$x[,2], pch = 19,
+     main = "Classic PCA with outlier", xlab = "PC1", ylab = "PC2")
+text(pca_out_classic$x[,1], pca_out_classic$x[,2],
+     labels = machines_out$machine, pos = 3, cex = 0.5)
+
+plot(pca_out_robust@scores[,1], pca_out_robust@scores[,2], pch = 19,
+     main = "Robust PCA (MCD)", xlab = "PC1", ylab = "PC2")
+text(pca_out_robust@scores[,1], pca_out_robust@scores[,2],
+     labels = machines_out$machine, pos = 3, cex = 0.5)
+par(mfrow = c(1, 1))
+```
+
+### Distance diagnostics (robust PCA)
+
+```{r}
+plot(pca_out_robust)  # outlier map: orthogonal vs score distances
+```
+
+# Decisions and conclusions
+
+-   Classical summaries provide a baseline; compare trimmed/winsorized means and MAD to flag skew/heavy tails.
+-   PCA on raw scale vs standardized: choose the variant that reaches ≥95% variance with fewer components and clearer loadings; document which variables dominate each retained PC.
+-   With the injected outlier, classical PCA reorients strongly toward the extreme point (variance inflation, first PC dominated by the outlier). The MCD-based PCA keeps stable directions and variance shares.
+-   For reporting: state which PCA you recommend (often standardized if scales differ), how many components you keep (based on the 95% rule), and how the outlier analysis supports the robustness choice.
+
+# Bibliography
+
+-   Jolliffe, I. T. (2002). *Principal Component Analysis*. Springer.
+-   Todorov, V., & Filzmoser, P. (2009). An object oriented framework for robust multivariate analysis. *Journal of Statistical Software*, 32(3), 1–47. \*\*\*
