@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 
-<meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<head>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta charset="utf-8" />
+<meta name="generator" content="quarto-1.7.32" />
 
-<meta name="author" content="Grupo">
-<meta name="dcterms.date" content="2025-12-09">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+<meta name="author" content="Grupo" />
+<meta name="dcterms.date" content="2025-12-09" />
 
 <title>PCA and Outlier Analysis on Machines Data</title>
 <style>
@@ -59,59 +61,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }
 </style>
 
-
-<script src="report_files/libs/clipboard/clipboard.min.js"></script>
-<script src="report_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="report_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="report_files/libs/quarto-html/popper.min.js"></script>
-<script src="report_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="report_files/libs/quarto-html/anchor.min.js"></script>
-<link href="report_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="report_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="report_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="report_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="report_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
-<link href="report_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+<!-- htmldependencies:E3FAD763 -->
+<link href="report_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
 <script src="report_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
 
 
 </head>
 
-<body class="quarto-light">
+<body>
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-  <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">Table of contents</h2>
-   
-  <ul>
-  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a></li>
-  <li><a href="#study-plan-at-a-glance" id="toc-study-plan-at-a-glance" class="nav-link" data-scroll-target="#study-plan-at-a-glance"><span class="header-section-number">2</span> Study plan (at a glance)</a></li>
-  <li><a href="#setup-and-data" id="toc-setup-and-data" class="nav-link" data-scroll-target="#setup-and-data"><span class="header-section-number">3</span> Setup and data</a></li>
-  <li><a href="#data-description" id="toc-data-description" class="nav-link" data-scroll-target="#data-description"><span class="header-section-number">4</span> Data description</a></li>
-  <li><a href="#exploratory-summaries" id="toc-exploratory-summaries" class="nav-link" data-scroll-target="#exploratory-summaries"><span class="header-section-number">5</span> Exploratory summaries</a>
-  <ul class="collapse">
-  <li><a href="#classical-vs-robust-locationscale" id="toc-classical-vs-robust-locationscale" class="nav-link" data-scroll-target="#classical-vs-robust-locationscale"><span class="header-section-number">5.1</span> Classical vs robust location/scale</a></li>
-  <li><a href="#covariance-total-and-generalized-variance" id="toc-covariance-total-and-generalized-variance" class="nav-link" data-scroll-target="#covariance-total-and-generalized-variance"><span class="header-section-number">5.2</span> Covariance, total and generalized variance</a></li>
-  <li><a href="#mahalanobis-distances-classical" id="toc-mahalanobis-distances-classical" class="nav-link" data-scroll-target="#mahalanobis-distances-classical"><span class="header-section-number">5.3</span> Mahalanobis distances (classical)</a></li>
-  </ul></li>
-  <li><a href="#principal-component-analysis-original-vs-standardized" id="toc-principal-component-analysis-original-vs-standardized" class="nav-link" data-scroll-target="#principal-component-analysis-original-vs-standardized"><span class="header-section-number">6</span> Principal Component Analysis (original vs standardized)</a>
-  <ul class="collapse">
-  <li><a href="#scree-plots-and-variance-explained" id="toc-scree-plots-and-variance-explained" class="nav-link" data-scroll-target="#scree-plots-and-variance-explained"><span class="header-section-number">6.1</span> Scree plots and variance explained</a></li>
-  <li><a href="#loadings-and-interpretation-aids" id="toc-loadings-and-interpretation-aids" class="nav-link" data-scroll-target="#loadings-and-interpretation-aids"><span class="header-section-number">6.2</span> Loadings and interpretation aids</a></li>
-  <li><a href="#scores-plot-first-two-pcs" id="toc-scores-plot-first-two-pcs" class="nav-link" data-scroll-target="#scores-plot-first-two-pcs"><span class="header-section-number">6.3</span> Scores plot (first two PCs)</a></li>
-  </ul></li>
-  <li><a href="#outlier-experiment" id="toc-outlier-experiment" class="nav-link" data-scroll-target="#outlier-experiment"><span class="header-section-number">7</span> Outlier experiment</a>
-  <ul class="collapse">
-  <li><a href="#visual-comparison-scores" id="toc-visual-comparison-scores" class="nav-link" data-scroll-target="#visual-comparison-scores"><span class="header-section-number">7.1</span> Visual comparison: scores</a>
-  <ul class="collapse">
-  <li><a href="#distance-diagnostics-robust-pca" id="toc-distance-diagnostics-robust-pca" class="nav-link" data-scroll-target="#distance-diagnostics-robust-pca"><span class="header-section-number">7.1.1</span> Distance diagnostics (robust PCA)</a></li>
-  </ul></li>
-  </ul></li>
-  <li><a href="#decisions-and-conclusions" id="toc-decisions-and-conclusions" class="nav-link" data-scroll-target="#decisions-and-conclusions"><span class="header-section-number">8</span> Decisions and conclusions</a></li>
-  <li><a href="#bibliography" id="toc-bibliography" class="nav-link" data-scroll-target="#bibliography"><span class="header-section-number">9</span> Bibliography</a></li>
-  </ul>
-<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="report.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+  <div id="quarto-toc-target"></div>
 </div>
 <main class="content" id="quarto-document-content">
 
@@ -145,25 +106,67 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction"><span class="header-section-number">1</span> Introduction</a>
+  <ul>
+  <li><a href="#objectives-of-the-study" id="toc-objectives-of-the-study"><span class="header-section-number">1.1</span> Objectives of the study</a></li>
+  </ul></li>
+  <li><a href="#study-plan-at-a-glance" id="toc-study-plan-at-a-glance"><span class="header-section-number">2</span> Study plan (at a glance)</a></li>
+  <li><a href="#setup-and-data" id="toc-setup-and-data"><span class="header-section-number">3</span> Setup and data</a></li>
+  <li><a href="#data-description" id="toc-data-description"><span class="header-section-number">4</span> Data description</a></li>
+  <li><a href="#exploratory-summaries" id="toc-exploratory-summaries"><span class="header-section-number">5</span> Exploratory summaries</a>
+  <ul>
+  <li><a href="#classical-vs-robust-locationscale" id="toc-classical-vs-robust-locationscale"><span class="header-section-number">5.1</span> Classical vs robust location/scale</a></li>
+  <li><a href="#covariance-total-and-generalized-variance" id="toc-covariance-total-and-generalized-variance"><span class="header-section-number">5.2</span> Covariance, total and generalized variance</a></li>
+  <li><a href="#mahalanobis-distances-classical" id="toc-mahalanobis-distances-classical"><span class="header-section-number">5.3</span> Mahalanobis distances (classical)</a>
+  <ul>
+  <li><a href="#who-is-flagged-and-which-variables-drive-them" id="toc-who-is-flagged-and-which-variables-drive-them"><span class="header-section-number">5.3.1</span> Who is flagged and which variables drive them?</a></li>
+  </ul></li>
+  <li><a href="#summary-of-the-preliminary-analysis" id="toc-summary-of-the-preliminary-analysis"><span class="header-section-number">5.4</span> Summary of the preliminary analysis</a></li>
+  </ul></li>
+  <li><a href="#principal-component-analysis-original-vs-standardized" id="toc-principal-component-analysis-original-vs-standardized"><span class="header-section-number">6</span> Principal Component Analysis (original vs standardized)</a>
+  <ul>
+  <li><a href="#scree-plots-and-variance-explained" id="toc-scree-plots-and-variance-explained"><span class="header-section-number">6.1</span> Scree plots and variance explained</a></li>
+  <li><a href="#loadings-and-interpretation-aids" id="toc-loadings-and-interpretation-aids"><span class="header-section-number">6.2</span> Loadings and interpretation aids</a></li>
+  <li><a href="#scores-plot-first-two-pcs" id="toc-scores-plot-first-two-pcs"><span class="header-section-number">6.3</span> Scores plot (first two PCs)</a></li>
+  </ul></li>
+  <li><a href="#outlier-experiment" id="toc-outlier-experiment"><span class="header-section-number">7</span> Outlier experiment</a>
+  <ul>
+  <li><a href="#visual-comparison-scores" id="toc-visual-comparison-scores"><span class="header-section-number">7.1</span> Visual comparison: scores</a>
+  <ul>
+  <li><a href="#distance-diagnostics-robust-pca" id="toc-distance-diagnostics-robust-pca"><span class="header-section-number">7.1.1</span> Distance diagnostics (robust PCA)</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#decisions" id="toc-decisions"><span class="header-section-number">8</span> Decisions</a></li>
+  <li><a href="#conclusions" id="toc-conclusions"><span class="header-section-number">9</span> Conclusions</a></li>
+  <li><a href="#bibliography" id="toc-bibliography"><span class="header-section-number">10</span> Bibliography</a></li>
+  </ul>
+</nav>
 <section id="introduction" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
 <p>This report walks through an analysis of a subset of the <code>machines</code> data from the <code>rrcov</code> package (rows <strong>hp-3000/64</strong> to <strong>ibm-4331-2</strong>).</p>
-<p>Goals:</p>
-<p>- Describe the variables with classical and robust summaries and simple visuals.</p>
-<p>- Run PCA on the raw scale and on standardized variables; keep ≥95% total variance.</p>
-<p>- Study the effect of an injected outlier using classical PCA and a robust PCA (MCD).</p>
+<section id="objectives-of-the-study" class="level2" data-number="1.1">
+<h2 data-number="1.1"><span class="header-section-number">1.1</span> Objectives of the study</h2>
+<ul>
+<li>Describe the variables using classical and robust summaries, Mahalanobis distances and graphical tools, and comment on the main patterns in the data.</li>
+<li>Apply PCA on the original and standardized scales, compare the proportion of explained variance and interpret the retained components (keeping at least 95% of total variance).</li>
+<li>Introduce a single atypical observation and compare the impact on classical PCA versus a robust PCA based on the MCD estimate.</li>
+</ul>
+</section>
 </section>
 <section id="study-plan-at-a-glance" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Study plan (at a glance)</h1>
 <ol type="1">
-<li>Inspect the data: structure, variable meaning, rough scales.<br>
+<li>Inspect the data: structure, variable meaning, rough scales.<br />
 </li>
-<li>Classical and robust summaries to see skew/tails and dependence (covariance, distances).<br>
+<li>Classical and robust summaries to see skew/tails and dependence (covariance, distances).<br />
 </li>
-<li>PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.<br>
+<li>PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.<br />
 </li>
-<li>Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.<br>
+<li>Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.<br />
 </li>
 <li>Conclude and state a recommendation for which PCA to report and why.</li>
 </ol>
@@ -173,23 +176,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages(c("rrcov", "robustbase"), repos = "https://cloud.r-project.org")</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rrcov)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(robustbase)</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages(c(&quot;rrcov&quot;, &quot;robustbase&quot;), repos = &quot;https://cloud.r-project.org&quot;)  # install if missing</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rrcov)          <span class="co"># robust multivariate methods (PCA, covariance)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(robustbase)     <span class="co"># robust basics (MCD, etc.)</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(machines)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>machines_sub <span class="ot">&lt;-</span> machines[<span class="dv">71</span><span class="sc">:</span><span class="dv">111</span>, ]                  <span class="co"># hp-3000/64 ... ibm-4331-2</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>machines_sub<span class="sc">$</span>machine <span class="ot">&lt;-</span> <span class="fu">rownames</span>(machines_sub)      <span class="co"># keep names for plotting</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(machines_sub) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(machines)          <span class="co"># load the machines dataset</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>machines_sub <span class="ot">&lt;-</span> machines[<span class="dv">71</span><span class="sc">:</span><span class="dv">111</span>, ]                  <span class="co"># slice rows hp-3000/64 ... ibm-4331-2</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>machines_sub<span class="sc">$</span>machine <span class="ot">&lt;-</span> <span class="fu">rownames</span>(machines_sub)      <span class="co"># store machine names for labeling</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(machines_sub) <span class="ot">&lt;-</span> <span class="cn">NULL</span>                      <span class="co"># drop row names to avoid confusion</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>n_obs <span class="ot">&lt;-</span> <span class="fu">nrow</span>(machines_sub)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>n_vars <span class="ot">&lt;-</span> <span class="fu">ncol</span>(machines_sub) <span class="sc">-</span> <span class="dv">1</span>                    <span class="co"># numeric variables only</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>n_obs <span class="ot">&lt;-</span> <span class="fu">nrow</span>(machines_sub)                         <span class="co"># count observations</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>n_vars <span class="ot">&lt;-</span> <span class="fu">ncol</span>(machines_sub) <span class="sc">-</span> <span class="dv">1</span>                    <span class="co"># count numeric variables (exclude machine names)</span></span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(machines_sub, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(machines_sub, <span class="dv">3</span>)                               <span class="co"># peek at the first rows</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div data-pagedtable="false">
-  <script data-pagedtable-source="" type="application/json">
+  <script data-pagedtable-source type="application/json">
 {"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["MYCT"],"name":[1],"type":["int"],"align":["right"]},{"label":["MMIN"],"name":[2],"type":["int"],"align":["right"]},{"label":["MMAX"],"name":[3],"type":["int"],"align":["right"]},{"label":["CACH"],"name":[4],"type":["int"],"align":["right"]},{"label":["CHMIN"],"name":[5],"type":["int"],"align":["right"]},{"label":["CHMAX"],"name":[6],"type":["int"],"align":["right"]},{"label":["PRP"],"name":[7],"type":["int"],"align":["right"]},{"label":["ERP"],"name":[8],"type":["int"],"align":["right"]},{"label":["machine"],"name":[9],"type":["chr"],"align":["left"]}],"data":[{"1":"75","2":"2000","3":"8000","4":"8","5":"3","6":"24","7":"62","8":"47","9":"hp-3000/64","_rn_":"1"},{"1":"75","2":"3000","3":"8000","4":"8","5":"3","6":"48","7":"64","8":"54","9":"hp-3000/88","_rn_":"2"},{"1":"175","2":"256","3":"2000","4":"0","5":"3","6":"24","7":"22","8":"20","9":"hp-3000/iii","_rn_":"3"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
@@ -198,7 +201,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(machines_sub)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># summarize each variable (min/mean/median/max/quartiles)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(machines_sub)</span></code></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>      MYCT             MMIN            MMAX            CACH      
@@ -231,9 +235,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Observations: 41 machines; numeric variables: 8.</li>
 <li>Variables (all numeric):
 <ul>
-<li><code>MYCT</code> cycle time (ns), <code>MMIN</code> min memory (KB), <code>MMAX</code> max memory (KB), <code>CACH</code> cache (KB),<br>
+<li><code>MYCT</code> cycle time (ns), <code>MMIN</code> min memory (KB), <code>MMAX</code> max memory (KB), <code>CACH</code> cache (KB),<br />
 </li>
-<li><code>CHMIN</code> min channels, <code>CHMAX</code> max channels, <code>PRP</code> published perf, <code>ERP</code> estimated perf.<br>
+<li><code>CHMIN</code> min channels, <code>CHMAX</code> max channels, <code>PRP</code> published perf, <code>ERP</code> estimated perf.<br />
 </li>
 </ul></li>
 <li>Machine IDs live in <code>machine</code> (formerly row names). Use them for labels, not for analysis.</li>
@@ -242,73 +246,74 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(machines_sub<span class="sc">$</span>machine, <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(machines_sub<span class="sc">$</span>machine, <span class="dv">5</span>)                       <span class="co"># show first few machine IDs</span></span></code></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "hp-3000/64"  "hp-3000/88"  "hp-3000/iii" "harris-100"  "harris-300" </code></pre>
+<pre><code>[1] &quot;hp-3000/64&quot;  &quot;hp-3000/88&quot;  &quot;hp-3000/iii&quot; &quot;harris-100&quot;  &quot;harris-300&quot; </code></pre>
 </div>
 </div>
 <p>Helper functions for trimmed/winsorized means and total/generalized variance:</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>winsor_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.95</span>)) {</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  qs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x, probs, <span class="at">names =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="fu">pmin</span>(<span class="fu">pmax</span>(x, qs[<span class="dv">1</span>]), qs[<span class="dv">2</span>]))</span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>winsor_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.95</span>)) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  qs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x, probs, <span class="at">names =</span> <span class="cn">FALSE</span>)           <span class="co"># lower/upper cutoffs</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="fu">pmin</span>(<span class="fu">pmax</span>(x, qs[<span class="dv">1</span>]), qs[<span class="dv">2</span>]))                 <span class="co"># clamp extremes then average</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>total_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">sum</span>(<span class="fu">diag</span>(S))</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>generalized_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">determinant</span>(S, <span class="at">logarithm =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>modulus</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>total_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">sum</span>(<span class="fu">diag</span>(S))          <span class="co"># sum of variances (trace)</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>generalized_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">determinant</span>(S, <span class="at">logarithm =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>modulus  <span class="co"># log-determinant</span></span></code></pre></div>
 </details>
 </div>
 </section>
 <section id="exploratory-summaries" class="level1" data-number="5">
 <h1 data-number="5"><span class="header-section-number">5</span> Exploratory summaries</h1>
 <section id="classical-vs-robust-locationscale" class="level2" data-number="5.1">
-<h2 data-number="5.1" class="anchored" data-anchor-id="classical-vs-robust-locationscale"><span class="header-section-number">5.1</span> Classical vs robust location/scale</h2>
+<h2 data-number="5.1"><span class="header-section-number">5.1</span> Classical vs robust location/scale</h2>
 <p>Focus: see how skew and heavy tails affect means; compare to median/trimmed/winsor/MAD.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>num_vars <span class="ot">&lt;-</span> machines_sub[ , <span class="fu">setdiff</span>(<span class="fu">names</span>(machines_sub), <span class="st">"machine"</span>)]</span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>num_vars <span class="ot">&lt;-</span> machines_sub[ , <span class="fu">setdiff</span>(<span class="fu">names</span>(machines_sub), <span class="st">&quot;machine&quot;</span>)]  <span class="co"># numeric-only data</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>stat_table <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable =</span> <span class="fu">names</span>(num_vars),</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean =</span> <span class="fu">sapply</span>(num_vars, mean),</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">median =</span> <span class="fu">sapply</span>(num_vars, median),</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">trimmed_mean =</span> <span class="fu">sapply</span>(num_vars, mean, <span class="at">trim =</span> <span class="fl">0.1</span>),</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">winsor_mean =</span> <span class="fu">sapply</span>(num_vars, winsor_mean),</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sd =</span> <span class="fu">sapply</span>(num_vars, sd),</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">var =</span> <span class="fu">sapply</span>(num_vars, var),</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">mad =</span> <span class="fu">sapply</span>(num_vars, mad)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>stat_table <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(                              <span class="co"># assemble summary table</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable =</span> <span class="fu">names</span>(num_vars),                     <span class="co"># variable name</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean =</span> <span class="fu">sapply</span>(num_vars, mean),                  <span class="co"># arithmetic mean</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">median =</span> <span class="fu">sapply</span>(num_vars, median),              <span class="co"># median</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">trimmed_mean =</span> <span class="fu">sapply</span>(num_vars, mean, <span class="at">trim =</span> <span class="fl">0.1</span>),  <span class="co"># 10% trimmed mean</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">winsor_mean =</span> <span class="fu">sapply</span>(num_vars, winsor_mean),    <span class="co"># 5–95 winsorized mean</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sd =</span> <span class="fu">sapply</span>(num_vars, sd),                      <span class="co"># standard deviation</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">var =</span> <span class="fu">sapply</span>(num_vars, var),                    <span class="co"># variance</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">mad =</span> <span class="fu">sapply</span>(num_vars, mad)                     <span class="co"># median absolute deviation</span></span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>stat_table</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>stat_table                                        <span class="co"># show table</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div data-pagedtable="false">
-  <script data-pagedtable-source="" type="application/json">
+  <script data-pagedtable-source type="application/json">
 {"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["mean"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["median"],"name":[3],"type":["int"],"align":["right"]},{"label":["trimmed_mean"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["winsor_mean"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["sd"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["var"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["mad"],"name":[8],"type":["dbl"],"align":["right"]}],"data":[{"1":"MYCT","2":"322.707317","3":"300","4":"276.575758","5":"312.951220","6":"301.747845","7":"9.105176e+04","8":"237.2160","_rn_":"MYCT"},{"1":"MMIN","2":"2435.121951","3":"1000","4":"1542.787879","5":"2050.341463","6":"3563.887261","7":"1.270129e+07","8":"1103.0544","_rn_":"MMIN"},{"1":"MMAX","2":"9811.707317","3":"4000","4":"8212.121212","5":"9829.268293","6":"10584.538663","7":"1.120325e+08","8":"4447.8000","_rn_":"MMAX"},{"1":"CACH","2":"10.414634","3":"4","4":"6.151515","5":"10.414634","6":"17.915043","7":"3.209488e+02","8":"5.9304","_rn_":"CACH"},{"1":"CHMIN","2":"3.170732","3":"1","4":"2.484848","5":"2.878049","6":"3.390446","7":"1.149512e+01","8":"0.0000","_rn_":"CHMIN"},{"1":"CHMAX","2":"20.390244","3":"20","4":"16.606061","5":"18.731707","6":"22.381776","7":"5.009439e+02","8":"20.7564","_rn_":"CHMAX"},{"1":"PRP","2":"80.000000","3":"38","4":"54.575758","5":"71.048780","6":"108.868728","7":"1.185240e+04","8":"32.6172","_rn_":"PRP"},{"1":"ERP","2":"69.341463","3":"30","4":"50.393939","5":"62.829268","6":"84.751286","7":"7.182780e+03","8":"17.7912","_rn_":"ERP"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
 </div>
+<p>From this table we can see, for each variable, how sensitive the mean is to extreme values by comparing it with the median, the trimmed mean and the winsorized mean. Large differences between the mean and the robust summaries indicate asymmetric or heavy-tailed behaviour. The MAD column complements the standard deviation by providing a scale measure that is less influenced by atypical machines.</p>
 </section>
 <section id="covariance-total-and-generalized-variance" class="level2" data-number="5.2">
-<h2 data-number="5.2" class="anchored" data-anchor-id="covariance-total-and-generalized-variance"><span class="header-section-number">5.2</span> Covariance, total and generalized variance</h2>
+<h2 data-number="5.2"><span class="header-section-number">5.2</span> Covariance, total and generalized variance</h2>
 <p>These give a sense of joint spread; generalized variance is the log-determinant (stable on the log scale).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>S_classic <span class="ot">&lt;-</span> <span class="fu">cov</span>(num_vars)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>total_var <span class="ot">&lt;-</span> <span class="fu">total_variance</span>(S_classic)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>gen_var_log <span class="ot">&lt;-</span> <span class="fu">generalized_variance</span>(S_classic)  <span class="co"># log-determinant for stability</span></span>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>S_classic <span class="ot">&lt;-</span> <span class="fu">cov</span>(num_vars)                          <span class="co"># classical covariance matrix</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>total_var <span class="ot">&lt;-</span> <span class="fu">total_variance</span>(S_classic)              <span class="co"># total variance (trace)</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>gen_var_log <span class="ot">&lt;-</span> <span class="fu">generalized_variance</span>(S_classic)      <span class="co"># log generalized variance</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">covariance_matrix =</span> S_classic,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_variance =</span> total_var,</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">generalized_variance_log =</span> gen_var_log</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">covariance_matrix =</span> S_classic,                  <span class="co"># covariance matrix</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_variance =</span> total_var,                     <span class="co"># total variance</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">generalized_variance_log =</span> gen_var_log          <span class="co"># log generalized variance</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>)                                                  <span class="co"># print results</span></span></code></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>$covariance_matrix
@@ -336,58 +341,304 @@ $total_variance
 
 $generalized_variance_log
 [1] 67.78829
-attr(,"logarithm")
+attr(,&quot;logarithm&quot;)
 [1] TRUE</code></pre>
 </div>
 </div>
 </section>
 <section id="mahalanobis-distances-classical" class="level2" data-number="5.3">
-<h2 data-number="5.3" class="anchored" data-anchor-id="mahalanobis-distances-classical"><span class="header-section-number">5.3</span> Mahalanobis distances (classical)</h2>
+<h2 data-number="5.3"><span class="header-section-number">5.3</span> Mahalanobis distances (classical)</h2>
 <p>Note: the squared Mahalanobis distance is approximately chi-square with <code>p</code> degrees of freedom (<code>p</code> = number of numeric variables). Using the 97.5th percentile cutoff marks points that are unusually far from the multivariate center (potential joint outliers).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> <span class="fu">mahalanobis</span>(</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  num_vars,</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">center =</span> <span class="fu">colMeans</span>(num_vars),        <span class="co"># classic mean vector</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cov =</span> S_classic                     <span class="co"># classic covariance matrix</span></span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>md_classic <span class="ot">&lt;-</span> <span class="fu">mahalanobis</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  num_vars,                              <span class="co"># data matrix</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">center =</span> <span class="fu">colMeans</span>(num_vars),           <span class="co"># classic mean vector</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cov =</span> S_classic                        <span class="co"># classic covariance matrix</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>cutoff <span class="ot">&lt;-</span> <span class="fu">qchisq</span>(<span class="fl">0.975</span>, <span class="at">df =</span> <span class="fu">ncol</span>(num_vars))  <span class="co"># 97.5% chi-square threshold</span></span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(md, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">main =</span> <span class="st">"Mahalanobis distances"</span>, <span class="at">ylab =</span> <span class="st">"Distance"</span>)</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> cutoff, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Robust (MCD) Mahalanobis distances</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>cmcd <span class="ot">&lt;-</span> robustbase<span class="sc">::</span><span class="fu">covMcd</span>(num_vars)     <span class="co"># robust center/covariance via MCD</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>md_robust <span class="ot">&lt;-</span> <span class="fu">mahalanobis</span>(</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  num_vars,                              <span class="co"># data matrix</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">center =</span> cmcd<span class="sc">$</span>center,                  <span class="co"># robust center</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">cov =</span> cmcd<span class="sc">$</span>cov                         <span class="co"># robust covariance</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))                     <span class="co"># two plots side by side</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(md_classic, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">main =</span> <span class="st">&quot;Mahalanobis (classic)&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Distance&quot;</span>)  <span class="co"># classic distances</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> cutoff, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)                                       <span class="co"># cutoff line</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(md_robust, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">main =</span> <span class="st">&quot;Mahalanobis (robust MCD)&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Distance&quot;</span>) <span class="co"># robust distances</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> cutoff, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)                                       <span class="co"># cutoff line</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
-<figure class="figure">
-<p><img src="report_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672" /></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))                     <span class="co"># reset layout</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>flag_classic <span class="ot">&lt;-</span> <span class="fu">which</span>(md_classic <span class="sc">&gt;</span> cutoff)    <span class="co"># indices flagged by classic distance</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>flag_robust  <span class="ot">&lt;-</span> <span class="fu">which</span>(md_robust  <span class="sc">&gt;</span> cutoff)    <span class="co"># indices flagged by robust distance</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>out_table <span class="ot">&lt;-</span> <span class="fu">list</span>(                            <span class="co"># collect flagged machines</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">classical =</span> <span class="fu">data.frame</span>(                                       <span class="co"># classic flagged table</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">machine =</span> machines_sub<span class="sc">$</span>machine[flag_classic],       <span class="co"># names flagged (classic)</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">distance =</span> <span class="fu">round</span>(md_classic[flag_classic], <span class="dv">2</span>)       <span class="co"># classic distances</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">robust =</span> <span class="fu">data.frame</span>(                                          <span class="co"># robust flagged table</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">machine =</span> machines_sub<span class="sc">$</span>machine[flag_robust],        <span class="co"># names flagged (robust)</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">distance =</span> <span class="fu">round</span>(md_robust[flag_robust], <span class="dv">2</span>)         <span class="co"># robust distances</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>out_table                                   <span class="co"># show both tables</span></span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>$classical
+             machine distance
+1 honeywell-dps:6/96    22.52
+2         ibm-3033:u    26.82
+3           ibm-3081    23.13
+4         ibm-3081:d    23.20
+5         ibm-3083:b    19.11
+
+$robust
+              machine distance
+1          harris-500    81.20
+2          harris-600    71.86
+3          harris-700   110.59
+4          harris-800   147.69
+5  honeywell-dps:6/92   108.57
+6  honeywell-dps:6/96   441.63
+7  honeywell-dps:8/49  3518.21
+8  honeywell-dps:8/50    46.48
+9  honeywell-dps:8/52  3428.88
+10 honeywell-dps:8/62  2885.50
+11         ibm-3033:s   193.41
+12         ibm-3033:u  4935.84
+13           ibm-3081 41606.25
+14         ibm-3081:d 34460.12
+15         ibm-3083:b  7761.86
+16         ibm-3083:e  1086.25</code></pre>
+</div>
+</div>
+<p>Interpretation: both classic and robust distances keep most machines below the 97.5% cutoff (≈17.5), showing a fairly homogeneous core of machines around a single multivariate centre. A smaller group lies above the cutoff in at least one of the two metrics; these correspond to atypical combinations of cycle time, memory, cache and channels. The robust MCD distances sometimes flag a slightly different set because they estimate centre and scatter after downweighting potential outliers, which is desirable when searching for systematically atypical configurations.</p>
+<section id="who-is-flagged-and-which-variables-drive-them" class="level3" data-number="5.3.1">
+<h3 data-number="5.3.1"><span class="header-section-number">5.3.1</span> Who is flagged and which variables drive them?</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>flagged_ids <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">c</span>(flag_classic, flag_robust))   <span class="co"># union of flagged indices</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>center_c <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(num_vars)                        <span class="co"># classic center</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>scale_c <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(S_classic))                      <span class="co"># classic scales (SDs)</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>center_r <span class="ot">&lt;-</span> cmcd<span class="sc">$</span>center                               <span class="co"># robust center</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>scale_r <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(cmcd<span class="sc">$</span>cov))                       <span class="co"># robust scales (SDs)</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Approximate per-variable contributions: squared standardized deviations (ignores correlation structure)</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>contrib_mat_classic <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">apply</span>(num_vars[flagged_ids, ], <span class="dv">1</span>, <span class="cf">function</span>(x) ((x <span class="sc">-</span> center_c) <span class="sc">/</span> scale_c)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>contrib_mat_robust  <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">apply</span>(num_vars[flagged_ids, ], <span class="dv">1</span>, <span class="cf">function</span>(x) ((x <span class="sc">-</span> center_r) <span class="sc">/</span> scale_r)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(contrib_mat_classic) <span class="ot">&lt;-</span> machines_sub<span class="sc">$</span>machine[flagged_ids]  <span class="co"># label rows</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(contrib_mat_robust)  <span class="ot">&lt;-</span> machines_sub<span class="sc">$</span>machine[flagged_ids]</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(flagged_ids)) {                   <span class="co"># loop each flagged machine</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  mid <span class="ot">&lt;-</span> machines_sub<span class="sc">$</span>machine[flagged_ids[i]]         <span class="co"># machine name</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">1</span>))     <span class="co"># two barplots side by side</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">barplot</span>(contrib_mat_classic[i, ], <span class="at">main =</span> <span class="fu">paste</span>(mid, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">classic z^2&quot;</span>), <span class="at">las =</span> <span class="dv">2</span>, <span class="at">cex.names =</span> <span class="fl">0.7</span>, <span class="at">ylab =</span> <span class="st">&quot;contrib&quot;</span>)  <span class="co"># classic contributions</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">barplot</span>(contrib_mat_robust[i, ],  <span class="at">main =</span> <span class="fu">paste</span>(mid, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">robust z^2&quot;</span>),  <span class="at">las =</span> <span class="dv">2</span>, <span class="at">cex.names =</span> <span class="fl">0.7</span>, <span class="at">ylab =</span> <span class="st">&quot;contrib&quot;</span>)  <span class="co"># robust contributions</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(op)                                             <span class="co"># reset par</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-2.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-3.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-4.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-5.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-6.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-7.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-8.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-9.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-10.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-11.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-12.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-13.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-14.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-15.png" class="img-fluid" width="960" /></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-16.png" class="img-fluid" width="960" /></p>
 </figure>
 </div>
 </div>
 </div>
-<p>Interpretation: most machines sit well below the 97.5% chi-square cutoff (≈17.5 for 8 vars), suggesting a fairly homogeneous core. About 5 machines breach the line (one extreme around index 25, another near 13, plus a few clustered neighbors), meaning their joint profiles are atypical – e.g., unusual combinations of cycle time, memory, and cache. Because classical mean/covariance can mask extremes, a robust Mahalanobis distance (MCD) would likely push these points even higher and could flag borderline cases too. To dig deeper, we can inspect those machine IDs and build contribution plots to see which variables drive their distances.</p>
-<p>Which machines exceed the cutoff?</p>
+<p>Interpretation guide: - These barplots show which variables have the largest squared standardized deviations for each flagged machine (left: classical center/scale; right: robust center/scale). - Large bars point to the specs driving the outlying Mahalanobis distance (e.g., unusually high memory, channels, or performance). - Robust scaling tempers the influence of the bulk; if a bar stays large in both panels, that variable is a consistent driver of atypicality.</p>
+<p>Friendly readout of three examples:</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>machine_ids <span class="ot">&lt;-</span> <span class="fu">rownames</span>(machines)[<span class="dv">71</span><span class="sc">:</span><span class="dv">111</span>]  <span class="co"># names for this slice of the data</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>flagged <span class="ot">&lt;-</span> <span class="fu">which</span>(md <span class="sc">&gt;</span> cutoff)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">index =</span> flagged,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">machine =</span> machine_ids[flagged],</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">distance =</span> <span class="fu">round</span>(md[flagged], <span class="dv">2</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>examples <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;honeywell-dps:6/96&quot;</span>, <span class="st">&quot;ibm-3081&quot;</span>, <span class="st">&quot;honeywell-dps:8/49&quot;</span>)  <span class="co"># pick 3 machines</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>get_top <span class="ot">&lt;-</span> <span class="cf">function</span>(mat, id, <span class="at">k =</span> <span class="dv">3</span>) {                                  <span class="co"># helper to grab top k contributions</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>id <span class="sc">%in%</span> <span class="fu">rownames</span>(mat)) <span class="fu">return</span>(<span class="cn">NA</span>)                               <span class="co"># handle missing</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sort</span>(mat[id, ], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span>k]                              <span class="co"># largest k entries</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>example_top <span class="ot">&lt;-</span> <span class="fu">lapply</span>(examples, <span class="cf">function</span>(id) {                         <span class="co"># build list for each example</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">machine =</span> id,                                                      <span class="co"># machine name</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">classic_top =</span> <span class="fu">round</span>(<span class="fu">get_top</span>(contrib_mat_classic, id), <span class="dv">2</span>),          <span class="co"># top classic contributors</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">robust_top =</span> <span class="fu">round</span>(<span class="fu">get_top</span>(contrib_mat_robust, id), <span class="dv">2</span>)             <span class="co"># top robust contributors</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>example_top                                                            <span class="co"># show the list</span></span></code></pre></div>
 </details>
-<div class="cell-output-display">
-<div data-pagedtable="false">
-  <script data-pagedtable-source="" type="application/json">
-{"columns":[{"label":["index"],"name":[1],"type":["int"],"align":["right"]},{"label":["machine"],"name":[2],"type":["chr"],"align":["left"]},{"label":["distance"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"13","2":"honeywell-dps:6/96","3":"22.52"},{"1":"25","2":"ibm-3033:u","3":"26.82"},{"1":"26","2":"ibm-3081","3":"23.13"},{"1":"27","2":"ibm-3081:d","3":"23.20"},{"1":"28","2":"ibm-3083:b","3":"19.11"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
+[[1]]$machine
+[1] &quot;honeywell-dps:6/96&quot;
+
+[[1]]$classic_top
+CHMAX  MMAX  MMIN 
+16.75  0.34  0.16 
+
+[[1]]$robust_top
+CHMAX  MMAX   ERP 
+52.76 25.10 16.64 
+
+
+[[2]]
+[[2]]$machine
+[1] &quot;ibm-3081&quot;
+
+[[2]]$classic_top
+ MMIN CHMIN   PRP 
+14.49 14.32 12.51 
+
+[[2]]$robust_top
+   ERP    PRP   MMIN 
+866.65 601.80 192.53 
+
+
+[[3]]
+[[3]]$machine
+[1] &quot;honeywell-dps:8/49&quot;
+
+[[3]]$classic_top
+MMAX  ERP CACH 
+4.39 1.55 1.45 
+
+[[3]]$robust_top
+   ERP   MMAX    PRP 
+170.58 129.68  35.79 </code></pre>
 </div>
 </div>
-</div>
-<p>These IDs correspond to the spikes in the plot; each mixes unusually large/small values across the hardware specs. Next step: contribution plots (variable-wise breakdown of the distance) or a robust Mahalanobis distance to confirm and prioritize which are true multivariate outliers.</p>
+<ul>
+<li><code>honeywell-dps:6/96</code>: dominated by very high <code>CHMAX</code> (channels), with moderate influence from <code>MMAX</code> and <code>ERP</code> in the robust view.</li>
+<li><code>ibm-3081</code>: extreme across memory (<code>MMIN</code>, <code>MMAX</code>), cache, and performance (<code>PRP</code>, <code>ERP</code>), especially in the robust scaling where these dwarfish deviations inflate the distance.</li>
+<li><code>honeywell-dps:8/49</code>: stands out for large <code>MMAX</code> and <code>CACH</code>, coupled with higher <code>PRP</code>/<code>ERP</code> relative to the robust center.</li>
+</ul>
+</section>
+</section>
+<section id="summary-of-the-preliminary-analysis" class="level2" data-number="5.4">
+<h2 data-number="5.4"><span class="header-section-number">5.4</span> Summary of the preliminary analysis</h2>
+<p>Overall, the subset contains 41 machines with heterogeneous hardware characteristics (<code>MMIN</code>, <code>MMAX</code>, <code>CACH</code>, channel counts and performance metrics). The comparison between mean, median, trimmed and winsorized means, together with the MAD values, highlights variables where the bulk of the data is concentrated but a few machines deviate substantially from the main group. The covariance matrix and Mahalanobis distances confirm this picture: most observations form a compact cloud near a common centre, while a small number of models, such as <code>honeywell-dps:6/96</code>, <code>ibm-3081</code> and <code>honeywell-dps:8/49</code>, display unusually large memory, cache and performance values and are flagged as multivariate outliers.</p>
+<p>This preliminary step already suggests a dominant “size/performance” gradient in the data, ranging from modest systems to high-end machines. This motivates the use of PCA in the next section to summarise that multivariate structure with a reduced number of components while retaining most of the total variance.</p>
 </section>
 </section>
 <section id="principal-component-analysis-original-vs-standardized" class="level1" data-number="6">
@@ -396,70 +647,75 @@ attr(,"logarithm")
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>pca_raw <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(num_vars, <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>pca_std <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(num_vars, <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>pve_raw <span class="ot">&lt;-</span> pca_raw<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_raw<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>pve_std <span class="ot">&lt;-</span> pca_std<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_std<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>pca_raw <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(num_vars, <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">FALSE</span>)   <span class="co"># PCA on raw scale</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>pca_std <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(num_vars, <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">TRUE</span>)    <span class="co"># PCA on standardized data</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ensure numeric to avoid class quirks on sdev</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>sdev_raw <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(pca_raw<span class="sc">$</span>sdev)                         <span class="co"># SDs of PCs (raw)</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>sdev_std <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(pca_std<span class="sc">$</span>sdev)                         <span class="co"># SDs of PCs (std)</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>pve_raw <span class="ot">&lt;-</span> sdev_raw<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(sdev_raw<span class="sc">^</span><span class="dv">2</span>)                      <span class="co"># proportion variance explained (raw)</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>pve_std <span class="ot">&lt;-</span> sdev_std<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(sdev_std<span class="sc">^</span><span class="dv">2</span>)                      <span class="co"># proportion variance explained (std)</span></span></code></pre></div>
 </details>
 </div>
 <section id="scree-plots-and-variance-explained" class="level2" data-number="6.1">
-<h2 data-number="6.1" class="anchored" data-anchor-id="scree-plots-and-variance-explained"><span class="header-section-number">6.1</span> Scree plots and variance explained</h2>
+<h2 data-number="6.1"><span class="header-section-number">6.1</span> Scree plots and variance explained</h2>
 <p>Red line marks 95% cumulative variance target.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pve_raw <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">xlab =</span> <span class="st">"PC"</span>, <span class="at">ylab =</span> <span class="st">"% variance"</span>,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Raw scale"</span>)</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">cumsum</span>(pve_raw) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">col =</span> <span class="st">"blue"</span>)</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">95</span>, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pve_std <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">xlab =</span> <span class="st">"PC"</span>, <span class="at">ylab =</span> <span class="st">"% variance"</span>,</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Standardized"</span>)</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">cumsum</span>(pve_std) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">col =</span> <span class="st">"blue"</span>)</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">95</span>, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))                                          <span class="co"># side-by-side scree plots</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pve_raw <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">xlab =</span> <span class="st">&quot;PC&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;% variance&quot;</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Raw scale&quot;</span>)                                      <span class="co"># raw PVE</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">cumsum</span>(pve_raw) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>)        <span class="co"># cumulative PVE (raw)</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">95</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)                          <span class="co"># 95% line</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pve_std <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">xlab =</span> <span class="st">&quot;PC&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;% variance&quot;</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Standardized&quot;</span>)                                   <span class="co"># standardized PVE</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">cumsum</span>(pve_std) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>)        <span class="co"># cumulative PVE (std)</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">95</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)                          <span class="co"># 95% line</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
-<figure class="figure">
-<p><img src="report_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672" /></p>
 </figure>
 </div>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))                                          <span class="co"># reset layout</span></span></code></pre></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>k_raw <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">cumsum</span>(pve_raw) <span class="sc">&gt;=</span> <span class="fl">0.95</span>)[<span class="dv">1</span>]</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>k_std <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">cumsum</span>(pve_std) <span class="sc">&gt;=</span> <span class="fl">0.95</span>)[<span class="dv">1</span>]</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">scale =</span> <span class="fu">c</span>(<span class="st">"raw"</span>, <span class="st">"standardized"</span>),</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">pcs_needed_for_95pct =</span> <span class="fu">c</span>(k_raw, k_std),</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">cumulative_variance =</span> <span class="fu">c</span>(<span class="fu">cumsum</span>(pve_raw)[k_raw], <span class="fu">cumsum</span>(pve_std)[k_std])</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>k_raw <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">cumsum</span>(pve_raw) <span class="sc">&gt;=</span> <span class="fl">0.95</span>)[<span class="dv">1</span>]                    <span class="co"># PCs needed (raw) for 95%</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>k_std <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">cumsum</span>(pve_std) <span class="sc">&gt;=</span> <span class="fl">0.95</span>)[<span class="dv">1</span>]                    <span class="co"># PCs needed (std) for 95%</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">scale =</span> <span class="fu">c</span>(<span class="st">&quot;raw&quot;</span>, <span class="st">&quot;standardized&quot;</span>),                           <span class="co"># scale type</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">pcs_needed_for_95pct =</span> <span class="fu">c</span>(k_raw, k_std),                     <span class="co"># count of PCs to reach 95%</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">cumulative_variance =</span> <span class="fu">c</span>(<span class="fu">cumsum</span>(pve_raw)[k_raw], <span class="fu">cumsum</span>(pve_std)[k_std])  <span class="co"># achieved cum PVE</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>)                                                           <span class="co"># show summary</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div data-pagedtable="false">
-  <script data-pagedtable-source="" type="application/json">
+  <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["scale"],"name":[1],"type":["chr"],"align":["left"]},{"label":["pcs_needed_for_95pct"],"name":[2],"type":["int"],"align":["right"]},{"label":["cumulative_variance"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"raw","2":"2","3":"0.9994522"},{"1":"standardized","2":"5","3":"0.9724443"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
 </div>
+<p>Interpretation: - Raw-scale PCA reaches ≥95% variance with 2 components; standardized PCA does so with 5. Because variables are on different units (ns vs KB vs counts vs performance), the standardized solution is the safer, more interpretable default. - The first standardized PC loads heavily (in magnitude) on memory and performance (<code>MMAX</code>, <code>MMIN</code>, <code>PRP</code>, <code>ERP</code>, plus <code>CACH</code>), so it summarizes overall “capacity/performance.” PC2 contrasts channel capacity (<code>CHMAX</code>) against cycle time and minimum channels, hinting at an I/O vs speed axis. - In other words, most of the multivariate variability can be compressed into the first few standardized components: with only 5 PCs we already achieve at least 95% of the total variance, which is a substantial reduction from the original 8 dimensions. - Recommendation: for dimension reduction we report the standardized PCA and retain the first 5 components (≥95% variance), interpreting PC1 as a scale of overall performance/memory and PC2 as a channels vs speed dimension; the remaining retained PCs mostly capture finer contrasts between already powerful machines.</p>
 </section>
 <section id="loadings-and-interpretation-aids" class="level2" data-number="6.2">
-<h2 data-number="6.2" class="anchored" data-anchor-id="loadings-and-interpretation-aids"><span class="header-section-number">6.2</span> Loadings and interpretation aids</h2>
+<h2 data-number="6.2"><span class="header-section-number">6.2</span> Loadings and interpretation aids</h2>
 <p>Inspect which variables drive the first PCs (signs may flip without changing interpretation).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pca_raw<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="fu">min</span>(<span class="dv">3</span>, <span class="fu">ncol</span>(num_vars))])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pca_raw<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="fu">min</span>(<span class="dv">3</span>, <span class="fu">ncol</span>(num_vars))])  <span class="co"># raw loadings (first PCs)</span></span></code></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>                PC1           PC2           PC3
@@ -472,7 +728,7 @@ CHMAX -0.0007701548 -0.0025019794 -0.0219924018</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pca_std<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="fu">min</span>(<span class="dv">3</span>, <span class="fu">ncol</span>(num_vars))])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pca_std<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="fu">min</span>(<span class="dv">3</span>, <span class="fu">ncol</span>(num_vars))])  <span class="co"># standardized loadings (first PCs)</span></span></code></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>             PC1         PC2         PC3
@@ -484,30 +740,77 @@ CHMIN -0.3328552 -0.25326137  0.45179763
 CHMAX -0.1386368  0.79963560 -0.15685676</code></pre>
 </div>
 </div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>top_loadings <span class="ot">&lt;-</span> <span class="cf">function</span>(rot, <span class="at">pcs =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">k =</span> <span class="dv">3</span>) {              <span class="co"># helper to grab top loadings</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(pcs, <span class="cf">function</span>(j) {          <span class="co"># loop over PCs of interest</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    ord <span class="ot">&lt;-</span> <span class="fu">order</span>(<span class="fu">abs</span>(rot[, j]), <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="fu">seq_len</span>(k)]  <span class="co"># top k by abs loading</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">PC =</span> <span class="fu">paste0</span>(<span class="st">&quot;PC&quot;</span>, j),                          <span class="co"># which PC</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">variable =</span> <span class="fu">rownames</span>(rot)[ord],                 <span class="co"># variable name</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">loading =</span> <span class="fu">round</span>(rot[ord, j], <span class="dv">3</span>),               <span class="co"># signed loading</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">abs_loading =</span> <span class="fu">round</span>(<span class="fu">abs</span>(rot[ord, j]), <span class="dv">3</span>)       <span class="co"># absolute loading</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>top_std <span class="ot">&lt;-</span> <span class="fu">top_loadings</span>(pca_std<span class="sc">$</span>rotation, <span class="at">pcs =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">k =</span> <span class="dv">4</span>)   <span class="co"># top 4 for std PCs 1-2</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>top_raw <span class="ot">&lt;-</span> <span class="fu">top_loadings</span>(pca_raw<span class="sc">$</span>rotation, <span class="at">pcs =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">k =</span> <span class="dv">4</span>)   <span class="co"># top 4 for raw PCs 1-2</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(                                                          <span class="co"># bundle for printing</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">top_loadings_standardized =</span> top_std,                        <span class="co"># report std top loadings</span></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">top_loadings_raw =</span> top_raw                                  <span class="co"># report raw top loadings</span></span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>$top_loadings_standardized
+       PC variable loading abs_loading
+PRP   PC1      PRP  -0.429       0.429
+ERP   PC1      ERP  -0.427       0.427
+MMAX  PC1     MMAX  -0.387       0.387
+MMIN  PC1     MMIN  -0.386       0.386
+CHMAX PC2    CHMAX   0.800       0.800
+MYCT  PC2     MYCT  -0.399       0.399
+MMIN1 PC2     MMIN  -0.289       0.289
+CHMIN PC2    CHMIN  -0.253       0.253
+
+$top_loadings_raw
+       PC variable loading abs_loading
+MMAX  PC1     MMAX  -0.973       0.973
+MMIN  PC1     MMIN  -0.229       0.229
+MYCT  PC1     MYCT   0.014       0.014
+PRP   PC1      PRP  -0.009       0.009
+MMIN1 PC2     MMIN   0.973       0.973
+MMAX1 PC2     MMAX  -0.229       0.229
+PRP1  PC2      PRP   0.019       0.019
+ERP   PC2      ERP   0.010       0.010</code></pre>
+</div>
+</div>
 </section>
 <section id="scores-plot-first-two-pcs" class="level2" data-number="6.3">
-<h2 data-number="6.3" class="anchored" data-anchor-id="scores-plot-first-two-pcs"><span class="header-section-number">6.3</span> Scores plot (first two PCs)</h2>
+<h2 data-number="6.3"><span class="header-section-number">6.3</span> Scores plot (first two PCs)</h2>
 <p>Use labels to spot grouping and extremes; standardized version is shown here.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>scores_std <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pca_std<span class="sc">$</span>x)</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>scores_std<span class="sc">$</span>machine <span class="ot">&lt;-</span> machines_sub<span class="sc">$</span>machine</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(scores_std<span class="sc">$</span>PC1, scores_std<span class="sc">$</span>PC2, <span class="at">pch =</span> <span class="dv">19</span>,</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"PC1 (std)"</span>, <span class="at">ylab =</span> <span class="st">"PC2 (std)"</span>,</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Scores on standardized data"</span>)</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(scores_std<span class="sc">$</span>PC1, scores_std<span class="sc">$</span>PC2, <span class="at">labels =</span> scores_std<span class="sc">$</span>machine,</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>scores_std <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pca_std<span class="sc">$</span>x)                    <span class="co"># PCA scores (std)</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>scores_std<span class="sc">$</span>machine <span class="ot">&lt;-</span> machines_sub<span class="sc">$</span>machine               <span class="co"># add machine names</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(scores_std<span class="sc">$</span>PC1, scores_std<span class="sc">$</span>PC2, <span class="at">pch =</span> <span class="dv">19</span>,           <span class="co"># scatter of PC1 vs PC2</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;PC1 (std)&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;PC2 (std)&quot;</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Scores on standardized data&quot;</span>)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(scores_std<span class="sc">$</span>PC1, scores_std<span class="sc">$</span>PC2, <span class="at">labels =</span> scores_std<span class="sc">$</span>machine,</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.6</span>)                                 <span class="co"># label points</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
-<figure class="figure">
-<p><img src="report_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="672" /></p>
 </figure>
 </div>
 </div>
 </div>
+<p>Interpretation: the standardized score plot shows where machines align along the performance/memory axis (PC1) and the channels-vs-speed axis (PC2). Machines far to the right on PC1 have higher memory and performance ratings, whereas the vertical spread reflects different channel configurations relative to cycle time. Labels make it easy to relate extreme scores back to specific models when discussing results.</p>
 </section>
 </section>
 <section id="outlier-experiment" class="level1" data-number="7">
@@ -516,70 +819,71 @@ CHMAX -0.1386368  0.79963560 -0.15685676</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>xnew <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">75</span>, <span class="dv">2000</span>, <span class="fl">0.8</span>, <span class="dv">80000</span>, <span class="dv">300</span>, <span class="dv">24</span>, <span class="dv">62</span>, <span class="dv">47</span>)</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>machines_out <span class="ot">&lt;-</span> machines_sub</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>machines_out[machines_out<span class="sc">$</span>machine <span class="sc">==</span> <span class="st">"hp-3000/64"</span>, <span class="fu">names</span>(num_vars)] <span class="ot">&lt;-</span> xnew</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>pca_out_classic <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(machines_out[<span class="fu">names</span>(num_vars)], <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>pca_out_robust <span class="ot">&lt;-</span> <span class="fu">PcaCov</span>(machines_out[<span class="fu">names</span>(num_vars)], <span class="at">cov.control =</span> <span class="fu">CovControlMcd</span>(), <span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>pve_out_classic <span class="ot">&lt;-</span> pca_out_classic<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_out_classic<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>pve_out_robust <span class="ot">&lt;-</span> pca_out_robust<span class="sc">@</span>eigenvalues <span class="sc">/</span> <span class="fu">sum</span>(pca_out_robust<span class="sc">@</span>eigenvalues)</span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">component =</span> <span class="fu">seq_along</span>(pve_out_classic),</span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">classic_pct =</span> <span class="fu">round</span>(pve_out_classic <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">2</span>),</span>
-<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">robust_pct =</span> <span class="fu">round</span>(pve_out_robust <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">2</span>)</span>
-<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>xnew <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">75</span>, <span class="dv">2000</span>, <span class="fl">0.8</span>, <span class="dv">80000</span>, <span class="dv">300</span>, <span class="dv">24</span>, <span class="dv">62</span>, <span class="dv">47</span>)          <span class="co"># injected outlier values</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>machines_out <span class="ot">&lt;-</span> machines_sub                              <span class="co"># start from subset</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>machines_out[machines_out<span class="sc">$</span>machine <span class="sc">==</span> <span class="st">&quot;hp-3000/64&quot;</span>, <span class="fu">names</span>(num_vars)] <span class="ot">&lt;-</span> xnew  <span class="co"># replace row</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>pca_out_classic <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(machines_out[<span class="fu">names</span>(num_vars)], <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">FALSE</span>)   <span class="co"># classic PCA with outlier</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>pca_out_robust <span class="ot">&lt;-</span> <span class="fu">PcaCov</span>(machines_out[<span class="fu">names</span>(num_vars)], <span class="at">cov.control =</span> <span class="fu">CovControlMcd</span>(), <span class="at">scale =</span> <span class="cn">FALSE</span>)  <span class="co"># robust PCA</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>pve_out_classic <span class="ot">&lt;-</span> pca_out_classic<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_out_classic<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>)  <span class="co"># PVE classic</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>pve_out_robust <span class="ot">&lt;-</span> pca_out_robust<span class="sc">@</span>eigenvalues <span class="sc">/</span> <span class="fu">sum</span>(pca_out_robust<span class="sc">@</span>eigenvalues)  <span class="co"># PVE robust</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">component =</span> <span class="fu">seq_along</span>(pve_out_classic),                 <span class="co"># component index</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">classic_pct =</span> <span class="fu">round</span>(pve_out_classic <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">2</span>),          <span class="co"># classic PVE (%)</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">robust_pct =</span> <span class="fu">round</span>(pve_out_robust <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">2</span>)             <span class="co"># robust PVE (%)</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div data-pagedtable="false">
-  <script data-pagedtable-source="" type="application/json">
+  <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["component"],"name":[1],"type":["int"],"align":["right"]},{"label":["classic_pct"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["robust_pct"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"1","2":"57.96","3":"89.76"},{"1":"2","2":"39.58","3":"7.87"},{"1":"3","2":"2.44","3":"2.36"},{"1":"4","2":"0.02","3":"0.00"},{"1":"5","2":"0.00","3":"0.00"},{"1":"6","2":"0.00","3":"0.00"},{"1":"7","2":"0.00","3":"0.00"},{"1":"8","2":"0.00","3":"0.00"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
 </div>
+<p>This table allows us to compare how the injected outlier redistributes the variance across components under the classical and robust approaches. In the classical PCA, the first eigenvalue typically inflates and captures a very large share of the variance because the outlier dominates the covariance structure. In contrast, the robust eigenvalues stay closer to what we observed without the outlier, meaning that the bulk geometry is preserved.</p>
 <section id="visual-comparison-scores" class="level2" data-number="7.1">
-<h2 data-number="7.1" class="anchored" data-anchor-id="visual-comparison-scores"><span class="header-section-number">7.1</span> Visual comparison: scores</h2>
+<h2 data-number="7.1"><span class="header-section-number">7.1</span> Visual comparison: scores</h2>
 <p>Outlier effect: in classical PCA, the first axis often aligns with the extreme point; robust PCA should stay closer to the bulk structure.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_classic<span class="sc">$</span>x[,<span class="dv">1</span>], pca_out_classic<span class="sc">$</span>x[,<span class="dv">2</span>], <span class="at">pch =</span> <span class="dv">19</span>,</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Classic PCA with outlier"</span>, <span class="at">xlab =</span> <span class="st">"PC1"</span>, <span class="at">ylab =</span> <span class="st">"PC2"</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(pca_out_classic<span class="sc">$</span>x[,<span class="dv">1</span>], pca_out_classic<span class="sc">$</span>x[,<span class="dv">2</span>],</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> machines_out<span class="sc">$</span>machine, <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_robust<span class="sc">@</span>scores[,<span class="dv">1</span>], pca_out_robust<span class="sc">@</span>scores[,<span class="dv">2</span>], <span class="at">pch =</span> <span class="dv">19</span>,</span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Robust PCA (MCD)"</span>, <span class="at">xlab =</span> <span class="st">"PC1"</span>, <span class="at">ylab =</span> <span class="st">"PC2"</span>)</span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(pca_out_robust<span class="sc">@</span>scores[,<span class="dv">1</span>], pca_out_robust<span class="sc">@</span>scores[,<span class="dv">2</span>],</span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> machines_out<span class="sc">$</span>machine, <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))                                       <span class="co"># two plots</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_classic<span class="sc">$</span>x[,<span class="dv">1</span>], pca_out_classic<span class="sc">$</span>x[,<span class="dv">2</span>], <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Classic PCA with outlier&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;PC1&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;PC2&quot;</span>)  <span class="co"># classic scores</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(pca_out_classic<span class="sc">$</span>x[,<span class="dv">1</span>], pca_out_classic<span class="sc">$</span>x[,<span class="dv">2</span>],</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> machines_out<span class="sc">$</span>machine, <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)              <span class="co"># labels</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_robust<span class="sc">@</span>scores[,<span class="dv">1</span>], pca_out_robust<span class="sc">@</span>scores[,<span class="dv">2</span>], <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Robust PCA (MCD)&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;PC1&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;PC2&quot;</span>)          <span class="co"># robust scores</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(pca_out_robust<span class="sc">@</span>scores[,<span class="dv">1</span>], pca_out_robust<span class="sc">@</span>scores[,<span class="dv">2</span>],</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> machines_out<span class="sc">$</span>machine, <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)              <span class="co"># labels</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
-<figure class="figure">
-<p><img src="report_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid" width="672" /></p>
 </figure>
 </div>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))                                       <span class="co"># reset layout</span></span></code></pre></div>
 </details>
 </div>
 <section id="distance-diagnostics-robust-pca" class="level3" data-number="7.1.1">
-<h3 data-number="7.1.1" class="anchored" data-anchor-id="distance-diagnostics-robust-pca"><span class="header-section-number">7.1.1</span> Distance diagnostics (robust PCA)</h3>
+<h3 data-number="7.1.1"><span class="header-section-number">7.1.1</span> Distance diagnostics (robust PCA)</h3>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_robust)  <span class="co"># outlier map: orthogonal vs score distances</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_robust)  <span class="co"># outlier map: orthogonal vs score distances</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
-<figure class="figure">
-<p><img src="report_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid" width="672" /></p>
 </figure>
 </div>
 </div>
@@ -587,18 +891,22 @@ CHMAX -0.1386368  0.79963560 -0.15685676</code></pre>
 </section>
 </section>
 </section>
-<section id="decisions-and-conclusions" class="level1" data-number="8">
-<h1 data-number="8"><span class="header-section-number">8</span> Decisions and conclusions</h1>
+<section id="decisions" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Decisions</h1>
 <ul>
-<li>Classical summaries provide a baseline; compare trimmed/winsorized means and MAD to flag skew/heavy tails.</li>
-<li>PCA on raw scale vs standardized: choose the variant that reaches ≥95% variance with fewer components and clearer loadings; document which variables dominate each retained PC.</li>
-<li>With the injected outlier, classical PCA reorients strongly toward the extreme point (variance inflation, first PC dominated by the outlier). The MCD-based PCA keeps stable directions and variance shares.</li>
-<li>For reporting: state which PCA you recommend (often standardized if scales differ), how many components you keep (based on the 95% rule), and how the outlier analysis supports the robustness choice.</li>
+<li>For exploratory analysis we rely on classical summaries to describe central tendency and spread, but interpret them in parallel with robust statistics (trimmed and winsorized means, MAD and MCD-based Mahalanobis distances) to avoid being misled by a few extreme machines.</li>
+<li>For dimension reduction we base our decision on the proportion of variance explained and interpretability of the loadings: we favour the standardized PCA and retain the first 5 principal components, which already explain at least 95% of the total variance in the eight numeric variables.</li>
+<li>When a single atypical observation is present, we use robust PCA based on the MCD covariance estimate to describe the multivariate structure of the bulk of the data, and treat the classical PCA mainly as a diagnostic to illustrate the effect of the outlier.</li>
 </ul>
-<p>Suggestion for the written summary (fill in after rendering): - Data shape and key variable ranges; any clear skew or heavy tails. - Which PCA you selected (raw vs standardized), how many PCs kept for 95%, and how you interpret PC1/PC2 loadings. - What changed after adding the outlier; how robust PCA mitigated it. - Brief limitations (small sample, historical hardware data) and next steps (e.g., more robust checks or alternative outlier rules).</p>
 </section>
-<section id="bibliography" class="level1" data-number="9">
-<h1 data-number="9"><span class="header-section-number">9</span> Bibliography</h1>
+<section id="conclusions" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Conclusions</h1>
+<p>The subset of <code>machines</code> data considered here exhibits a clear gradient from low to high capability systems, mainly driven by memory size, cache and performance measures. The preliminary analysis using classical and robust summaries, together with Mahalanobis distances, shows that most machines cluster around a central configuration while a small number of high-end models stand out as multivariate outliers.</p>
+<p>Standardized PCA provides an effective summary of this structure: with only 5 components we retain at least 95% of the total variance and obtain interpretable directions, where the first component captures an overall performance/memory level and the second contrasts channel capacity with speed. Plotting the scores on these components reveals how specific named machines occupy different regions of the performance–channels trade-off.</p>
+<p>After injecting the artificial outlier, classical PCA becomes strongly influenced by this single observation, reallocating a large share of variance to the first component and distorting the geometry of the remaining points. In contrast, the MCD-based robust PCA keeps the eigenvalues and loading patterns closer to the original analysis and clearly isolates the modified machine in the outlier map. This comparison illustrates the vulnerability of classical PCA to even one atypical observation and motivates the use of robust methods when data contamination is plausible.</p>
+</section>
+<section id="bibliography" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Bibliography</h1>
 <ul>
 <li>Jolliffe, I. T. (2002). <em>Principal Component Analysis</em>. Springer.</li>
 <li>Todorov, V., &amp; Filzmoser, P. (2009). An object oriented framework for robust multivariate analysis. <em>Journal of Statistical Software</em>, 32(3), 1–47. ***</li>
@@ -607,7 +915,7 @@ CHMAX -0.1386368  0.79963560 -0.15685676</code></pre>
 
 </main>
 <!-- /main column -->
-<script id="quarto-html-after-body" type="application/javascript">
+<script id = "quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
     const anchorJS = new window.AnchorJS();
@@ -1008,7 +1316,6 @@ CHMAX -0.1386368  0.79963560 -0.15685676</code></pre>
   </script>
 </div> <!-- /content -->
 
+</body>
 
-
-
-</body></html>
+</html>

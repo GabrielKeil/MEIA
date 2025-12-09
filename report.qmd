@@ -23,13 +23,11 @@ editor: visual
 
 This report walks through an analysis of a subset of the `machines` data from the `rrcov` package (rows **hp-3000/64** to **ibm-4331-2**).
 
-Goals:
+## Objectives of the study
 
-\- Describe the variables with classical and robust summaries and simple visuals.
-
-\- Run PCA on the raw scale and on standardized variables; keep ≥95% total variance.
-
-\- Study the effect of an injected outlier using classical PCA and a robust PCA (MCD).
+-   Describe the variables using classical and robust summaries, Mahalanobis distances and graphical tools, and comment on the main patterns in the data.
+-   Apply PCA on the original and standardized scales, compare the proportion of explained variance and interpret the retained components (keeping at least 95% of total variance).
+-   Introduce a single atypical observation and compare the impact on classical PCA versus a robust PCA based on the MCD estimate.
 
 # Study plan (at a glance)
 
@@ -42,22 +40,23 @@ Goals:
 # Setup and data
 
 ```{r}
-# install.packages(c("rrcov", "robustbase"), repos = "https://cloud.r-project.org")
-library(rrcov)
-library(robustbase)
+# install.packages(c("rrcov", "robustbase"), repos = "https://cloud.r-project.org")  # install if missing
+library(rrcov)          # robust multivariate methods (PCA, covariance)
+library(robustbase)     # robust basics (MCD, etc.)
 
-data(machines)
-machines_sub <- machines[71:111, ]                  # hp-3000/64 ... ibm-4331-2
-machines_sub$machine <- rownames(machines_sub)      # keep names for plotting
-rownames(machines_sub) <- NULL
+data(machines)          # load the machines dataset
+machines_sub <- machines[71:111, ]                  # slice rows hp-3000/64 ... ibm-4331-2
+machines_sub$machine <- rownames(machines_sub)      # store machine names for labeling
+rownames(machines_sub) <- NULL                      # drop row names to avoid confusion
 
-n_obs <- nrow(machines_sub)
-n_vars <- ncol(machines_sub) - 1                    # numeric variables only
+n_obs <- nrow(machines_sub)                         # count observations
+n_vars <- ncol(machines_sub) - 1                    # count numeric variables (exclude machine names)
 
-head(machines_sub, 3)
+head(machines_sub, 3)                               # peek at the first rows
 ```
 
 ```{r}
+# summarize each variable (min/mean/median/max/quartiles)
 summary(machines_sub)
 ```
 
@@ -72,19 +71,19 @@ summary(machines_sub)
 Quick look at the machine names:
 
 ```{r}
-head(machines_sub$machine, 5)
+head(machines_sub$machine, 5)                       # show first few machine IDs
 ```
 
 Helper functions for trimmed/winsorized means and total/generalized variance:
 
 ```{r}
 winsor_mean <- function(x, probs = c(0.05, 0.95)) {
-  qs <- quantile(x, probs, names = FALSE)
-  mean(pmin(pmax(x, qs[1]), qs[2]))
+  qs <- quantile(x, probs, names = FALSE)           # lower/upper cutoffs
+  mean(pmin(pmax(x, qs[1]), qs[2]))                 # clamp extremes then average
 }
 
-total_variance <- function(S) sum(diag(S))
-generalized_variance <- function(S) determinant(S, logarithm = TRUE)$modulus
+total_variance <- function(S) sum(diag(S))          # sum of variances (trace)
+generalized_variance <- function(S) determinant(S, logarithm = TRUE)$modulus  # log-determinant
 ```
 
 # Exploratory summaries
@@ -94,36 +93,38 @@ generalized_variance <- function(S) determinant(S, logarithm = TRUE)$modulus
 Focus: see how skew and heavy tails affect means; compare to median/trimmed/winsor/MAD.
 
 ```{r}
-num_vars <- machines_sub[ , setdiff(names(machines_sub), "machine")]
+num_vars <- machines_sub[ , setdiff(names(machines_sub), "machine")]  # numeric-only data
 
-stat_table <- data.frame(
-  variable = names(num_vars),
-  mean = sapply(num_vars, mean),
-  median = sapply(num_vars, median),
-  trimmed_mean = sapply(num_vars, mean, trim = 0.1),
-  winsor_mean = sapply(num_vars, winsor_mean),
-  sd = sapply(num_vars, sd),
-  var = sapply(num_vars, var),
-  mad = sapply(num_vars, mad)
+stat_table <- data.frame(                              # assemble summary table
+  variable = names(num_vars),                     # variable name
+  mean = sapply(num_vars, mean),                  # arithmetic mean
+  median = sapply(num_vars, median),              # median
+  trimmed_mean = sapply(num_vars, mean, trim = 0.1),  # 10% trimmed mean
+  winsor_mean = sapply(num_vars, winsor_mean),    # 5–95 winsorized mean
+  sd = sapply(num_vars, sd),                      # standard deviation
+  var = sapply(num_vars, var),                    # variance
+  mad = sapply(num_vars, mad)                     # median absolute deviation
 )
 
-stat_table
+stat_table                                        # show table
 ```
+
+From this table we can see, for each variable, how sensitive the mean is to extreme values by comparing it with the median, the trimmed mean and the winsorized mean. Large differences between the mean and the robust summaries indicate asymmetric or heavy-tailed behaviour. The MAD column complements the standard deviation by providing a scale measure that is less influenced by atypical machines.
 
 ## Covariance, total and generalized variance
 
 These give a sense of joint spread; generalized variance is the log-determinant (stable on the log scale).
 
 ```{r}
-S_classic <- cov(num_vars)
-total_var <- total_variance(S_classic)
-gen_var_log <- generalized_variance(S_classic)  # log-determinant for stability
+S_classic <- cov(num_vars)                          # classical covariance matrix
+total_var <- total_variance(S_classic)              # total variance (trace)
+gen_var_log <- generalized_variance(S_classic)      # log generalized variance
 
 list(
-  covariance_matrix = S_classic,
-  total_variance = total_var,
-  generalized_variance_log = gen_var_log
-)
+  covariance_matrix = S_classic,                  # covariance matrix
+  total_variance = total_var,                     # total variance
+  generalized_variance_log = gen_var_log          # log generalized variance
+)                                                  # print results
 ```
 
 ## Mahalanobis distances (classical)
@@ -131,44 +132,118 @@ list(
 Note: the squared Mahalanobis distance is approximately chi-square with `p` degrees of freedom (`p` = number of numeric variables). Using the 97.5th percentile cutoff marks points that are unusually far from the multivariate center (potential joint outliers).
 
 ```{r}
-md <- mahalanobis(
-  num_vars,
-  center = colMeans(num_vars),        # classic mean vector
-  cov = S_classic                     # classic covariance matrix
+md_classic <- mahalanobis(
+  num_vars,                              # data matrix
+  center = colMeans(num_vars),           # classic mean vector
+  cov = S_classic                        # classic covariance matrix
 )
 cutoff <- qchisq(0.975, df = ncol(num_vars))  # 97.5% chi-square threshold
 
-plot(md, pch = 19, main = "Mahalanobis distances", ylab = "Distance")
-abline(h = cutoff, col = "red", lty = 2)
+# Robust (MCD) Mahalanobis distances
+cmcd <- robustbase::covMcd(num_vars)     # robust center/covariance via MCD
+md_robust <- mahalanobis(
+  num_vars,                              # data matrix
+  center = cmcd$center,                  # robust center
+  cov = cmcd$cov                         # robust covariance
+)
+
+par(mfrow = c(1, 2))                     # two plots side by side
+plot(md_classic, pch = 19, main = "Mahalanobis (classic)", ylab = "Distance")  # classic distances
+abline(h = cutoff, col = "red", lty = 2)                                       # cutoff line
+
+plot(md_robust, pch = 19, main = "Mahalanobis (robust MCD)", ylab = "Distance") # robust distances
+abline(h = cutoff, col = "red", lty = 2)                                       # cutoff line
+par(mfrow = c(1, 1))                     # reset layout
+
+flag_classic <- which(md_classic > cutoff)    # indices flagged by classic distance
+flag_robust  <- which(md_robust  > cutoff)    # indices flagged by robust distance
+
+out_table <- list(                            # collect flagged machines
+  classical = data.frame(                                       # classic flagged table
+    machine = machines_sub$machine[flag_classic],       # names flagged (classic)
+    distance = round(md_classic[flag_classic], 2)       # classic distances
+  ),
+  robust = data.frame(                                          # robust flagged table
+    machine = machines_sub$machine[flag_robust],        # names flagged (robust)
+    distance = round(md_robust[flag_robust], 2)         # robust distances
+  )
+)
+out_table                                   # show both tables
+```
+Interpretation: both classic and robust distances keep most machines below the 97.5% cutoff (≈17.5), showing a fairly homogeneous core of machines around a single multivariate centre. A smaller group lies above the cutoff in at least one of the two metrics; these correspond to atypical combinations of cycle time, memory, cache and channels. The robust MCD distances sometimes flag a slightly different set because they estimate centre and scatter after downweighting potential outliers, which is desirable when searching for systematically atypical configurations.
+
+### Who is flagged and which variables drive them?
+
+```{r fig.height=4, fig.width=10}
+flagged_ids <- unique(c(flag_classic, flag_robust))   # union of flagged indices
+
+center_c <- colMeans(num_vars)                        # classic center
+scale_c <- sqrt(diag(S_classic))                      # classic scales (SDs)
+center_r <- cmcd$center                               # robust center
+scale_r <- sqrt(diag(cmcd$cov))                       # robust scales (SDs)
+
+# Approximate per-variable contributions: squared standardized deviations (ignores correlation structure)
+contrib_mat_classic <- t(apply(num_vars[flagged_ids, ], 1, function(x) ((x - center_c) / scale_c)^2))
+contrib_mat_robust  <- t(apply(num_vars[flagged_ids, ], 1, function(x) ((x - center_r) / scale_r)^2))
+rownames(contrib_mat_classic) <- machines_sub$machine[flagged_ids]  # label rows
+rownames(contrib_mat_robust)  <- machines_sub$machine[flagged_ids]
+
+for (i in seq_along(flagged_ids)) {                   # loop each flagged machine
+  mid <- machines_sub$machine[flagged_ids[i]]         # machine name
+  op <- par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))     # two barplots side by side
+  barplot(contrib_mat_classic[i, ], main = paste(mid, "\nclassic z^2"), las = 2, cex.names = 0.7, ylab = "contrib")  # classic contributions
+  barplot(contrib_mat_robust[i, ],  main = paste(mid, "\nrobust z^2"),  las = 2, cex.names = 0.7, ylab = "contrib")  # robust contributions
+  par(op)                                             # reset par
+}
 ```
 
-Interpretation: most machines sit well below the 97.5% chi-square cutoff (≈17.5 for 8 vars), suggesting a fairly homogeneous core. About 5 machines breach the line (one extreme around index 25, another near 13, plus a few clustered neighbors), meaning their joint profiles are atypical – e.g., unusual combinations of cycle time, memory, and cache. Because classical mean/covariance can mask extremes, a robust Mahalanobis distance (MCD) would likely push these points even higher and could flag borderline cases too. To dig deeper, we can inspect those machine IDs and build contribution plots to see which variables drive their distances.
+Interpretation guide:
+- These barplots show which variables have the largest squared standardized deviations for each flagged machine (left: classical center/scale; right: robust center/scale).
+- Large bars point to the specs driving the outlying Mahalanobis distance (e.g., unusually high memory, channels, or performance).
+- Robust scaling tempers the influence of the bulk; if a bar stays large in both panels, that variable is a consistent driver of atypicality.
 
-Which machines exceed the cutoff?
+Friendly readout of three examples:
 
 ```{r}
-machine_ids <- rownames(machines)[71:111]  # names for this slice of the data
-flagged <- which(md > cutoff)
-
-data.frame(
-  index = flagged,
-  machine = machine_ids[flagged],
-  distance = round(md[flagged], 2)
-)
+examples <- c("honeywell-dps:6/96", "ibm-3081", "honeywell-dps:8/49")  # pick 3 machines
+get_top <- function(mat, id, k = 3) {                                  # helper to grab top k contributions
+  if (!id %in% rownames(mat)) return(NA)                               # handle missing
+  sort(mat[id, ], decreasing = TRUE)[1:k]                              # largest k entries
+}
+example_top <- lapply(examples, function(id) {                         # build list for each example
+  list(
+    machine = id,                                                      # machine name
+    classic_top = round(get_top(contrib_mat_classic, id), 2),          # top classic contributors
+    robust_top = round(get_top(contrib_mat_robust, id), 2)             # top robust contributors
+  )
+})
+example_top                                                            # show the list
 ```
 
-These IDs correspond to the spikes in the plot; each mixes unusually large/small values across the hardware specs. Next step: contribution plots (variable-wise breakdown of the distance) or a robust Mahalanobis distance to confirm and prioritize which are true multivariate outliers.
+- `honeywell-dps:6/96`: dominated by very high `CHMAX` (channels), with moderate influence from `MMAX` and `ERP` in the robust view.
+- `ibm-3081`: extreme across memory (`MMIN`, `MMAX`), cache, and performance (`PRP`, `ERP`), especially in the robust scaling where these dwarfish deviations inflate the distance.
+- `honeywell-dps:8/49`: stands out for large `MMAX` and `CACH`, coupled with higher `PRP`/`ERP` relative to the robust center.
+
+## Summary of the preliminary analysis
+
+Overall, the subset contains `r n_obs` machines with heterogeneous hardware characteristics (`MMIN`, `MMAX`, `CACH`, channel counts and performance metrics). The comparison between mean, median, trimmed and winsorized means, together with the MAD values, highlights variables where the bulk of the data is concentrated but a few machines deviate substantially from the main group. The covariance matrix and Mahalanobis distances confirm this picture: most observations form a compact cloud near a common centre, while a small number of models, such as `honeywell-dps:6/96`, `ibm-3081` and `honeywell-dps:8/49`, display unusually large memory, cache and performance values and are flagged as multivariate outliers.
+
+This preliminary step already suggests a dominant “size/performance” gradient in the data, ranging from modest systems to high-end machines. This motivates the use of PCA in the next section to summarise that multivariate structure with a reduced number of components while retaining most of the total variance.
 
 # Principal Component Analysis (original vs standardized)
 
 We compare PCA on raw scales (keeps original units) vs standardized (puts variables on equal footing).
 
 ```{r}
-pca_raw <- prcomp(num_vars, center = TRUE, scale. = FALSE)
-pca_std <- prcomp(num_vars, center = TRUE, scale. = TRUE)
+pca_raw <- prcomp(num_vars, center = TRUE, scale. = FALSE)   # PCA on raw scale
+pca_std <- prcomp(num_vars, center = TRUE, scale. = TRUE)    # PCA on standardized data
 
-pve_raw <- pca_raw$sdev^2 / sum(pca_raw$sdev^2)
-pve_std <- pca_std$sdev^2 / sum(pca_std$sdev^2)
+# ensure numeric to avoid class quirks on sdev
+sdev_raw <- as.numeric(pca_raw$sdev)                         # SDs of PCs (raw)
+sdev_std <- as.numeric(pca_std$sdev)                         # SDs of PCs (std)
+
+pve_raw <- sdev_raw^2 / sum(sdev_raw^2)                      # proportion variance explained (raw)
+pve_std <- sdev_std^2 / sum(sdev_std^2)                      # proportion variance explained (std)
 ```
 
 ## Scree plots and variance explained
@@ -176,37 +251,64 @@ pve_std <- pca_std$sdev^2 / sum(pca_std$sdev^2)
 Red line marks 95% cumulative variance target.
 
 ```{r}
-par(mfrow = c(1, 2))
+par(mfrow = c(1, 2))                                          # side-by-side scree plots
 plot(pve_raw * 100, type = "b", pch = 19, xlab = "PC", ylab = "% variance",
-     main = "Raw scale")
-lines(cumsum(pve_raw) * 100, type = "b", col = "blue")
-abline(h = 95, col = "red", lty = 2)
+     main = "Raw scale")                                      # raw PVE
+lines(cumsum(pve_raw) * 100, type = "b", col = "blue")        # cumulative PVE (raw)
+abline(h = 95, col = "red", lty = 2)                          # 95% line
 
 plot(pve_std * 100, type = "b", pch = 19, xlab = "PC", ylab = "% variance",
-     main = "Standardized")
-lines(cumsum(pve_std) * 100, type = "b", col = "blue")
-abline(h = 95, col = "red", lty = 2)
-par(mfrow = c(1, 1))
+     main = "Standardized")                                   # standardized PVE
+lines(cumsum(pve_std) * 100, type = "b", col = "blue")        # cumulative PVE (std)
+abline(h = 95, col = "red", lty = 2)                          # 95% line
+par(mfrow = c(1, 1))                                          # reset layout
 ```
 
 ```{r}
-k_raw <- which(cumsum(pve_raw) >= 0.95)[1]
-k_std <- which(cumsum(pve_std) >= 0.95)[1]
+k_raw <- which(cumsum(pve_raw) >= 0.95)[1]                    # PCs needed (raw) for 95%
+k_std <- which(cumsum(pve_std) >= 0.95)[1]                    # PCs needed (std) for 95%
 
 data.frame(
-  scale = c("raw", "standardized"),
-  pcs_needed_for_95pct = c(k_raw, k_std),
-  cumulative_variance = c(cumsum(pve_raw)[k_raw], cumsum(pve_std)[k_std])
-)
+  scale = c("raw", "standardized"),                           # scale type
+  pcs_needed_for_95pct = c(k_raw, k_std),                     # count of PCs to reach 95%
+  cumulative_variance = c(cumsum(pve_raw)[k_raw], cumsum(pve_std)[k_std])  # achieved cum PVE
+)                                                           # show summary
 ```
+
+Interpretation:
+- Raw-scale PCA reaches ≥95% variance with `r k_raw` components; standardized PCA does so with `r k_std`. Because variables are on different units (ns vs KB vs counts vs performance), the standardized solution is the safer, more interpretable default.
+- The first standardized PC loads heavily (in magnitude) on memory and performance (`MMAX`, `MMIN`, `PRP`, `ERP`, plus `CACH`), so it summarizes overall “capacity/performance.” PC2 contrasts channel capacity (`CHMAX`) against cycle time and minimum channels, hinting at an I/O vs speed axis.
+- In other words, most of the multivariate variability can be compressed into the first few standardized components: with only `r k_std` PCs we already achieve at least 95% of the total variance, which is a substantial reduction from the original `r n_vars` dimensions.
+- Recommendation: for dimension reduction we report the standardized PCA and retain the first `r k_std` components (≥95% variance), interpreting PC1 as a scale of overall performance/memory and PC2 as a channels vs speed dimension; the remaining retained PCs mostly capture finer contrasts between already powerful machines.
 
 ## Loadings and interpretation aids
 
 Inspect which variables drive the first PCs (signs may flip without changing interpretation).
 
 ```{r}
-head(pca_raw$rotation[, 1:min(3, ncol(num_vars))])
-head(pca_std$rotation[, 1:min(3, ncol(num_vars))])
+head(pca_raw$rotation[, 1:min(3, ncol(num_vars))])  # raw loadings (first PCs)
+head(pca_std$rotation[, 1:min(3, ncol(num_vars))])  # standardized loadings (first PCs)
+```
+
+```{r}
+top_loadings <- function(rot, pcs = 1:2, k = 3) {              # helper to grab top loadings
+  do.call(rbind, lapply(pcs, function(j) {          # loop over PCs of interest
+    ord <- order(abs(rot[, j]), decreasing = TRUE)[seq_len(k)]  # top k by abs loading
+    data.frame(
+      PC = paste0("PC", j),                          # which PC
+      variable = rownames(rot)[ord],                 # variable name
+      loading = round(rot[ord, j], 3),               # signed loading
+      abs_loading = round(abs(rot[ord, j]), 3)       # absolute loading
+    )
+  }))
+}
+
+top_std <- top_loadings(pca_std$rotation, pcs = 1:2, k = 4)   # top 4 for std PCs 1-2
+top_raw <- top_loadings(pca_raw$rotation, pcs = 1:2, k = 4)   # top 4 for raw PCs 1-2
+list(                                                          # bundle for printing
+  top_loadings_standardized = top_std,                        # report std top loadings
+  top_loadings_raw = top_raw                                  # report raw top loadings
+)
 ```
 
 ## Scores plot (first two PCs)
@@ -214,54 +316,58 @@ head(pca_std$rotation[, 1:min(3, ncol(num_vars))])
 Use labels to spot grouping and extremes; standardized version is shown here.
 
 ```{r}
-scores_std <- as.data.frame(pca_std$x)
-scores_std$machine <- machines_sub$machine
+scores_std <- as.data.frame(pca_std$x)                    # PCA scores (std)
+scores_std$machine <- machines_sub$machine               # add machine names
 
-plot(scores_std$PC1, scores_std$PC2, pch = 19,
+plot(scores_std$PC1, scores_std$PC2, pch = 19,           # scatter of PC1 vs PC2
      xlab = "PC1 (std)", ylab = "PC2 (std)",
      main = "Scores on standardized data")
 text(scores_std$PC1, scores_std$PC2, labels = scores_std$machine,
-     pos = 3, cex = 0.6)
+     pos = 3, cex = 0.6)                                 # label points
 ```
+
+Interpretation: the standardized score plot shows where machines align along the performance/memory axis (PC1) and the channels-vs-speed axis (PC2). Machines far to the right on PC1 have higher memory and performance ratings, whereas the vertical spread reflects different channel configurations relative to cycle time. Labels make it easy to relate extreme scores back to specific models when discussing results.
 
 # Outlier experiment
 
 Introduce the atypical point at the former `hp-3000/64` row (no standardization).
 
 ```{r}
-xnew <- c(75, 2000, 0.8, 80000, 300, 24, 62, 47)
-machines_out <- machines_sub
-machines_out[machines_out$machine == "hp-3000/64", names(num_vars)] <- xnew
+xnew <- c(75, 2000, 0.8, 80000, 300, 24, 62, 47)          # injected outlier values
+machines_out <- machines_sub                              # start from subset
+machines_out[machines_out$machine == "hp-3000/64", names(num_vars)] <- xnew  # replace row
 
-pca_out_classic <- prcomp(machines_out[names(num_vars)], center = TRUE, scale. = FALSE)
-pca_out_robust <- PcaCov(machines_out[names(num_vars)], cov.control = CovControlMcd(), scale = FALSE)
+pca_out_classic <- prcomp(machines_out[names(num_vars)], center = TRUE, scale. = FALSE)   # classic PCA with outlier
+pca_out_robust <- PcaCov(machines_out[names(num_vars)], cov.control = CovControlMcd(), scale = FALSE)  # robust PCA
 
-pve_out_classic <- pca_out_classic$sdev^2 / sum(pca_out_classic$sdev^2)
-pve_out_robust <- pca_out_robust@eigenvalues / sum(pca_out_robust@eigenvalues)
+pve_out_classic <- pca_out_classic$sdev^2 / sum(pca_out_classic$sdev^2)  # PVE classic
+pve_out_robust <- pca_out_robust@eigenvalues / sum(pca_out_robust@eigenvalues)  # PVE robust
 
 data.frame(
-  component = seq_along(pve_out_classic),
-  classic_pct = round(pve_out_classic * 100, 2),
-  robust_pct = round(pve_out_robust * 100, 2)
+  component = seq_along(pve_out_classic),                 # component index
+  classic_pct = round(pve_out_classic * 100, 2),          # classic PVE (%)
+  robust_pct = round(pve_out_robust * 100, 2)             # robust PVE (%)
 )
 ```
+
+This table allows us to compare how the injected outlier redistributes the variance across components under the classical and robust approaches. In the classical PCA, the first eigenvalue typically inflates and captures a very large share of the variance because the outlier dominates the covariance structure. In contrast, the robust eigenvalues stay closer to what we observed without the outlier, meaning that the bulk geometry is preserved.
 
 ## Visual comparison: scores
 
 Outlier effect: in classical PCA, the first axis often aligns with the extreme point; robust PCA should stay closer to the bulk structure.
 
 ```{r}
-par(mfrow = c(1, 2))
+par(mfrow = c(1, 2))                                       # two plots
 plot(pca_out_classic$x[,1], pca_out_classic$x[,2], pch = 19,
-     main = "Classic PCA with outlier", xlab = "PC1", ylab = "PC2")
+     main = "Classic PCA with outlier", xlab = "PC1", ylab = "PC2")  # classic scores
 text(pca_out_classic$x[,1], pca_out_classic$x[,2],
-     labels = machines_out$machine, pos = 3, cex = 0.5)
+     labels = machines_out$machine, pos = 3, cex = 0.5)              # labels
 
 plot(pca_out_robust@scores[,1], pca_out_robust@scores[,2], pch = 19,
-     main = "Robust PCA (MCD)", xlab = "PC1", ylab = "PC2")
+     main = "Robust PCA (MCD)", xlab = "PC1", ylab = "PC2")          # robust scores
 text(pca_out_robust@scores[,1], pca_out_robust@scores[,2],
-     labels = machines_out$machine, pos = 3, cex = 0.5)
-par(mfrow = c(1, 1))
+     labels = machines_out$machine, pos = 3, cex = 0.5)              # labels
+par(mfrow = c(1, 1))                                       # reset layout
 ```
 
 ### Distance diagnostics (robust PCA)
@@ -270,14 +376,19 @@ par(mfrow = c(1, 1))
 plot(pca_out_robust)  # outlier map: orthogonal vs score distances
 ```
 
-# Decisions and conclusions
+# Decisions
 
--   Classical summaries provide a baseline; compare trimmed/winsorized means and MAD to flag skew/heavy tails.
--   PCA on raw scale vs standardized: choose the variant that reaches ≥95% variance with fewer components and clearer loadings; document which variables dominate each retained PC.
--   With the injected outlier, classical PCA reorients strongly toward the extreme point (variance inflation, first PC dominated by the outlier). The MCD-based PCA keeps stable directions and variance shares.
--   For reporting: state which PCA you recommend (often standardized if scales differ), how many components you keep (based on the 95% rule), and how the outlier analysis supports the robustness choice.
+-   For exploratory analysis we rely on classical summaries to describe central tendency and spread, but interpret them in parallel with robust statistics (trimmed and winsorized means, MAD and MCD-based Mahalanobis distances) to avoid being misled by a few extreme machines.
+-   For dimension reduction we base our decision on the proportion of variance explained and interpretability of the loadings: we favour the standardized PCA and retain the first `r k_std` principal components, which already explain at least 95% of the total variance in the eight numeric variables.
+-   When a single atypical observation is present, we use robust PCA based on the MCD covariance estimate to describe the multivariate structure of the bulk of the data, and treat the classical PCA mainly as a diagnostic to illustrate the effect of the outlier.
 
-Suggestion for the written summary (fill in after rendering): - Data shape and key variable ranges; any clear skew or heavy tails. - Which PCA you selected (raw vs standardized), how many PCs kept for 95%, and how you interpret PC1/PC2 loadings. - What changed after adding the outlier; how robust PCA mitigated it. - Brief limitations (small sample, historical hardware data) and next steps (e.g., more robust checks or alternative outlier rules).
+# Conclusions
+
+The subset of `machines` data considered here exhibits a clear gradient from low to high capability systems, mainly driven by memory size, cache and performance measures. The preliminary analysis using classical and robust summaries, together with Mahalanobis distances, shows that most machines cluster around a central configuration while a small number of high-end models stand out as multivariate outliers.
+
+Standardized PCA provides an effective summary of this structure: with only `r k_std` components we retain at least 95% of the total variance and obtain interpretable directions, where the first component captures an overall performance/memory level and the second contrasts channel capacity with speed. Plotting the scores on these components reveals how specific named machines occupy different regions of the performance–channels trade-off.
+
+After injecting the artificial outlier, classical PCA becomes strongly influenced by this single observation, reallocating a large share of variance to the first component and distorting the geometry of the remaining points. In contrast, the MCD-based robust PCA keeps the eigenvalues and loading patterns closer to the original analysis and clearly isolates the modified machine in the outlier map. This comparison illustrates the vulnerability of classical PCA to even one atypical observation and motivates the use of robust methods when data contamination is plausible.
 
 # Bibliography
 

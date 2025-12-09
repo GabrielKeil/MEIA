@@ -221,16 +221,22 @@ This report walks through an analysis of a subset of the
 \texttt{machines} data from the \texttt{rrcov} package (rows
 \textbf{hp-3000/64} to \textbf{ibm-4331-2}).
 
-Goals:
+\subsection{Objectives of the study}\label{objectives-of-the-study}
 
-- Describe the variables with classical and robust summaries and simple
-visuals.
-
-- Run PCA on the raw scale and on standardized variables; keep ≥95\%
-total variance.
-
-- Study the effect of an injected outlier using classical PCA and a
-robust PCA (MCD).
+\begin{itemize}
+\tightlist
+\item
+  Describe the variables using classical and robust summaries,
+  Mahalanobis distances and graphical tools, and comment on the main
+  patterns in the data.
+\item
+  Apply PCA on the original and standardized scales, compare the
+  proportion of explained variance and interpret the retained components
+  (keeping at least 95\% of total variance).
+\item
+  Introduce a single atypical observation and compare the impact on
+  classical PCA versus a robust PCA based on the MCD estimate.
+\end{itemize}
 
 \section{Study plan (at a glance)}\label{study-plan-at-a-glance}
 
@@ -256,19 +262,19 @@ robust PCA (MCD).
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\CommentTok{\# install.packages(c("rrcov", "robustbase"), repos = "https://cloud.r{-}project.org")}
-\FunctionTok{library}\NormalTok{(rrcov)}
-\FunctionTok{library}\NormalTok{(robustbase)}
+\CommentTok{\# install.packages(c("rrcov", "robustbase"), repos = "https://cloud.r{-}project.org")  \# install if missing}
+\FunctionTok{library}\NormalTok{(rrcov)          }\CommentTok{\# robust multivariate methods (PCA, covariance)}
+\FunctionTok{library}\NormalTok{(robustbase)     }\CommentTok{\# robust basics (MCD, etc.)}
 
-\FunctionTok{data}\NormalTok{(machines)}
-\NormalTok{machines\_sub }\OtherTok{\textless{}{-}}\NormalTok{ machines[}\DecValTok{71}\SpecialCharTok{:}\DecValTok{111}\NormalTok{, ]                  }\CommentTok{\# hp{-}3000/64 ... ibm{-}4331{-}2}
-\NormalTok{machines\_sub}\SpecialCharTok{$}\NormalTok{machine }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(machines\_sub)      }\CommentTok{\# keep names for plotting}
-\FunctionTok{rownames}\NormalTok{(machines\_sub) }\OtherTok{\textless{}{-}} \ConstantTok{NULL}
+\FunctionTok{data}\NormalTok{(machines)          }\CommentTok{\# load the machines dataset}
+\NormalTok{machines\_sub }\OtherTok{\textless{}{-}}\NormalTok{ machines[}\DecValTok{71}\SpecialCharTok{:}\DecValTok{111}\NormalTok{, ]                  }\CommentTok{\# slice rows hp{-}3000/64 ... ibm{-}4331{-}2}
+\NormalTok{machines\_sub}\SpecialCharTok{$}\NormalTok{machine }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(machines\_sub)      }\CommentTok{\# store machine names for labeling}
+\FunctionTok{rownames}\NormalTok{(machines\_sub) }\OtherTok{\textless{}{-}} \ConstantTok{NULL}                      \CommentTok{\# drop row names to avoid confusion}
 
-\NormalTok{n\_obs }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(machines\_sub)}
-\NormalTok{n\_vars }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(machines\_sub) }\SpecialCharTok{{-}} \DecValTok{1}                    \CommentTok{\# numeric variables only}
+\NormalTok{n\_obs }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(machines\_sub)                         }\CommentTok{\# count observations}
+\NormalTok{n\_vars }\OtherTok{\textless{}{-}} \FunctionTok{ncol}\NormalTok{(machines\_sub) }\SpecialCharTok{{-}} \DecValTok{1}                    \CommentTok{\# count numeric variables (exclude machine names)}
 
-\FunctionTok{head}\NormalTok{(machines\_sub, }\DecValTok{3}\NormalTok{)}
+\FunctionTok{head}\NormalTok{(machines\_sub, }\DecValTok{3}\NormalTok{)                               }\CommentTok{\# peek at the first rows}
 \end{Highlighting}
 \end{Shaded}
 
@@ -281,6 +287,7 @@ robust PCA (MCD).
 
 \begin{Shaded}
 \begin{Highlighting}[]
+\CommentTok{\# summarize each variable (min/mean/median/max/quartiles)}
 \FunctionTok{summary}\NormalTok{(machines\_sub)}
 \end{Highlighting}
 \end{Shaded}
@@ -336,7 +343,7 @@ Quick look at the machine names:
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{head}\NormalTok{(machines\_sub}\SpecialCharTok{$}\NormalTok{machine, }\DecValTok{5}\NormalTok{)}
+\FunctionTok{head}\NormalTok{(machines\_sub}\SpecialCharTok{$}\NormalTok{machine, }\DecValTok{5}\NormalTok{)                       }\CommentTok{\# show first few machine IDs}
 \end{Highlighting}
 \end{Shaded}
 
@@ -350,12 +357,12 @@ variance:
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{winsor\_mean }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x, }\AttributeTok{probs =} \FunctionTok{c}\NormalTok{(}\FloatTok{0.05}\NormalTok{, }\FloatTok{0.95}\NormalTok{)) \{}
-\NormalTok{  qs }\OtherTok{\textless{}{-}} \FunctionTok{quantile}\NormalTok{(x, probs, }\AttributeTok{names =} \ConstantTok{FALSE}\NormalTok{)}
-  \FunctionTok{mean}\NormalTok{(}\FunctionTok{pmin}\NormalTok{(}\FunctionTok{pmax}\NormalTok{(x, qs[}\DecValTok{1}\NormalTok{]), qs[}\DecValTok{2}\NormalTok{]))}
+\NormalTok{  qs }\OtherTok{\textless{}{-}} \FunctionTok{quantile}\NormalTok{(x, probs, }\AttributeTok{names =} \ConstantTok{FALSE}\NormalTok{)           }\CommentTok{\# lower/upper cutoffs}
+  \FunctionTok{mean}\NormalTok{(}\FunctionTok{pmin}\NormalTok{(}\FunctionTok{pmax}\NormalTok{(x, qs[}\DecValTok{1}\NormalTok{]), qs[}\DecValTok{2}\NormalTok{]))                 }\CommentTok{\# clamp extremes then average}
 \NormalTok{\}}
 
-\NormalTok{total\_variance }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(S) }\FunctionTok{sum}\NormalTok{(}\FunctionTok{diag}\NormalTok{(S))}
-\NormalTok{generalized\_variance }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(S) }\FunctionTok{determinant}\NormalTok{(S, }\AttributeTok{logarithm =} \ConstantTok{TRUE}\NormalTok{)}\SpecialCharTok{$}\NormalTok{modulus}
+\NormalTok{total\_variance }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(S) }\FunctionTok{sum}\NormalTok{(}\FunctionTok{diag}\NormalTok{(S))          }\CommentTok{\# sum of variances (trace)}
+\NormalTok{generalized\_variance }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(S) }\FunctionTok{determinant}\NormalTok{(S, }\AttributeTok{logarithm =} \ConstantTok{TRUE}\NormalTok{)}\SpecialCharTok{$}\NormalTok{modulus  }\CommentTok{\# log{-}determinant}
 \end{Highlighting}
 \end{Shaded}
 
@@ -369,20 +376,20 @@ median/trimmed/winsor/MAD.
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{num\_vars }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub[ , }\FunctionTok{setdiff}\NormalTok{(}\FunctionTok{names}\NormalTok{(machines\_sub), }\StringTok{"machine"}\NormalTok{)]}
+\NormalTok{num\_vars }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub[ , }\FunctionTok{setdiff}\NormalTok{(}\FunctionTok{names}\NormalTok{(machines\_sub), }\StringTok{"machine"}\NormalTok{)]  }\CommentTok{\# numeric{-}only data}
 
-\NormalTok{stat\_table }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
-  \AttributeTok{variable =} \FunctionTok{names}\NormalTok{(num\_vars),}
-  \AttributeTok{mean =} \FunctionTok{sapply}\NormalTok{(num\_vars, mean),}
-  \AttributeTok{median =} \FunctionTok{sapply}\NormalTok{(num\_vars, median),}
-  \AttributeTok{trimmed\_mean =} \FunctionTok{sapply}\NormalTok{(num\_vars, mean, }\AttributeTok{trim =} \FloatTok{0.1}\NormalTok{),}
-  \AttributeTok{winsor\_mean =} \FunctionTok{sapply}\NormalTok{(num\_vars, winsor\_mean),}
-  \AttributeTok{sd =} \FunctionTok{sapply}\NormalTok{(num\_vars, sd),}
-  \AttributeTok{var =} \FunctionTok{sapply}\NormalTok{(num\_vars, var),}
-  \AttributeTok{mad =} \FunctionTok{sapply}\NormalTok{(num\_vars, mad)}
+\NormalTok{stat\_table }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(                              }\CommentTok{\# assemble summary table}
+  \AttributeTok{variable =} \FunctionTok{names}\NormalTok{(num\_vars),                     }\CommentTok{\# variable name}
+  \AttributeTok{mean =} \FunctionTok{sapply}\NormalTok{(num\_vars, mean),                  }\CommentTok{\# arithmetic mean}
+  \AttributeTok{median =} \FunctionTok{sapply}\NormalTok{(num\_vars, median),              }\CommentTok{\# median}
+  \AttributeTok{trimmed\_mean =} \FunctionTok{sapply}\NormalTok{(num\_vars, mean, }\AttributeTok{trim =} \FloatTok{0.1}\NormalTok{),  }\CommentTok{\# 10\% trimmed mean}
+  \AttributeTok{winsor\_mean =} \FunctionTok{sapply}\NormalTok{(num\_vars, winsor\_mean),    }\CommentTok{\# 5–95 winsorized mean}
+  \AttributeTok{sd =} \FunctionTok{sapply}\NormalTok{(num\_vars, sd),                      }\CommentTok{\# standard deviation}
+  \AttributeTok{var =} \FunctionTok{sapply}\NormalTok{(num\_vars, var),                    }\CommentTok{\# variance}
+  \AttributeTok{mad =} \FunctionTok{sapply}\NormalTok{(num\_vars, mad)                     }\CommentTok{\# median absolute deviation}
 \NormalTok{)}
 
-\NormalTok{stat\_table}
+\NormalTok{stat\_table                                        }\CommentTok{\# show table}
 \end{Highlighting}
 \end{Shaded}
 
@@ -407,6 +414,13 @@ PRP   1.185240e+04   32.6172
 ERP   7.182780e+03   17.7912
 \end{verbatim}
 
+From this table we can see, for each variable, how sensitive the mean is
+to extreme values by comparing it with the median, the trimmed mean and
+the winsorized mean. Large differences between the mean and the robust
+summaries indicate asymmetric or heavy-tailed behaviour. The MAD column
+complements the standard deviation by providing a scale measure that is
+less influenced by atypical machines.
+
 \subsection{Covariance, total and generalized
 variance}\label{covariance-total-and-generalized-variance}
 
@@ -415,15 +429,15 @@ log-determinant (stable on the log scale).
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{S\_classic }\OtherTok{\textless{}{-}} \FunctionTok{cov}\NormalTok{(num\_vars)}
-\NormalTok{total\_var }\OtherTok{\textless{}{-}} \FunctionTok{total\_variance}\NormalTok{(S\_classic)}
-\NormalTok{gen\_var\_log }\OtherTok{\textless{}{-}} \FunctionTok{generalized\_variance}\NormalTok{(S\_classic)  }\CommentTok{\# log{-}determinant for stability}
+\NormalTok{S\_classic }\OtherTok{\textless{}{-}} \FunctionTok{cov}\NormalTok{(num\_vars)                          }\CommentTok{\# classical covariance matrix}
+\NormalTok{total\_var }\OtherTok{\textless{}{-}} \FunctionTok{total\_variance}\NormalTok{(S\_classic)              }\CommentTok{\# total variance (trace)}
+\NormalTok{gen\_var\_log }\OtherTok{\textless{}{-}} \FunctionTok{generalized\_variance}\NormalTok{(S\_classic)      }\CommentTok{\# log generalized variance}
 
 \FunctionTok{list}\NormalTok{(}
-  \AttributeTok{covariance\_matrix =}\NormalTok{ S\_classic,}
-  \AttributeTok{total\_variance =}\NormalTok{ total\_var,}
-  \AttributeTok{generalized\_variance\_log =}\NormalTok{ gen\_var\_log}
-\NormalTok{)}
+  \AttributeTok{covariance\_matrix =}\NormalTok{ S\_classic,                  }\CommentTok{\# covariance matrix}
+  \AttributeTok{total\_variance =}\NormalTok{ total\_var,                     }\CommentTok{\# total variance}
+  \AttributeTok{generalized\_variance\_log =}\NormalTok{ gen\_var\_log          }\CommentTok{\# log generalized variance}
+\NormalTok{)                                                  }\CommentTok{\# print results}
 \end{Highlighting}
 \end{Shaded}
 
@@ -467,59 +481,257 @@ unusually far from the multivariate center (potential joint outliers).
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{md }\OtherTok{\textless{}{-}} \FunctionTok{mahalanobis}\NormalTok{(}
-\NormalTok{  num\_vars,}
-  \AttributeTok{center =} \FunctionTok{colMeans}\NormalTok{(num\_vars),        }\CommentTok{\# classic mean vector}
-  \AttributeTok{cov =}\NormalTok{ S\_classic                     }\CommentTok{\# classic covariance matrix}
+\NormalTok{md\_classic }\OtherTok{\textless{}{-}} \FunctionTok{mahalanobis}\NormalTok{(}
+\NormalTok{  num\_vars,                              }\CommentTok{\# data matrix}
+  \AttributeTok{center =} \FunctionTok{colMeans}\NormalTok{(num\_vars),           }\CommentTok{\# classic mean vector}
+  \AttributeTok{cov =}\NormalTok{ S\_classic                        }\CommentTok{\# classic covariance matrix}
 \NormalTok{)}
 \NormalTok{cutoff }\OtherTok{\textless{}{-}} \FunctionTok{qchisq}\NormalTok{(}\FloatTok{0.975}\NormalTok{, }\AttributeTok{df =} \FunctionTok{ncol}\NormalTok{(num\_vars))  }\CommentTok{\# 97.5\% chi{-}square threshold}
 
-\FunctionTok{plot}\NormalTok{(md, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{, }\AttributeTok{main =} \StringTok{"Mahalanobis distances"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"Distance"}\NormalTok{)}
-\FunctionTok{abline}\NormalTok{(}\AttributeTok{h =}\NormalTok{ cutoff, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)}
+\CommentTok{\# Robust (MCD) Mahalanobis distances}
+\NormalTok{cmcd }\OtherTok{\textless{}{-}}\NormalTok{ robustbase}\SpecialCharTok{::}\FunctionTok{covMcd}\NormalTok{(num\_vars)     }\CommentTok{\# robust center/covariance via MCD}
+\NormalTok{md\_robust }\OtherTok{\textless{}{-}} \FunctionTok{mahalanobis}\NormalTok{(}
+\NormalTok{  num\_vars,                              }\CommentTok{\# data matrix}
+  \AttributeTok{center =}\NormalTok{ cmcd}\SpecialCharTok{$}\NormalTok{center,                  }\CommentTok{\# robust center}
+  \AttributeTok{cov =}\NormalTok{ cmcd}\SpecialCharTok{$}\NormalTok{cov                         }\CommentTok{\# robust covariance}
+\NormalTok{)}
+
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{))                     }\CommentTok{\# two plots side by side}
+\FunctionTok{plot}\NormalTok{(md\_classic, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{, }\AttributeTok{main =} \StringTok{"Mahalanobis (classic)"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"Distance"}\NormalTok{)  }\CommentTok{\# classic distances}
+\FunctionTok{abline}\NormalTok{(}\AttributeTok{h =}\NormalTok{ cutoff, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)                                       }\CommentTok{\# cutoff line}
+
+\FunctionTok{plot}\NormalTok{(md\_robust, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{, }\AttributeTok{main =} \StringTok{"Mahalanobis (robust MCD)"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"Distance"}\NormalTok{) }\CommentTok{\# robust distances}
+\FunctionTok{abline}\NormalTok{(}\AttributeTok{h =}\NormalTok{ cutoff, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)                                       }\CommentTok{\# cutoff line}
 \end{Highlighting}
 \end{Shaded}
 
 \pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-7-1.pdf}}
 
-Interpretation: most machines sit well below the 97.5\% chi-square
-cutoff (≈17.5 for 8 vars), suggesting a fairly homogeneous core. About 5
-machines breach the line (one extreme around index 25, another near 13,
-plus a few clustered neighbors), meaning their joint profiles are
-atypical -- e.g., unusual combinations of cycle time, memory, and cache.
-Because classical mean/covariance can mask extremes, a robust
-Mahalanobis distance (MCD) would likely push these points even higher
-and could flag borderline cases too. To dig deeper, we can inspect those
-machine IDs and build contribution plots to see which variables drive
-their distances.
-
-Which machines exceed the cutoff?
-
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{machine\_ids }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(machines)[}\DecValTok{71}\SpecialCharTok{:}\DecValTok{111}\NormalTok{]  }\CommentTok{\# names for this slice of the data}
-\NormalTok{flagged }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(md }\SpecialCharTok{\textgreater{}}\NormalTok{ cutoff)}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{))                     }\CommentTok{\# reset layout}
 
-\FunctionTok{data.frame}\NormalTok{(}
-  \AttributeTok{index =}\NormalTok{ flagged,}
-  \AttributeTok{machine =}\NormalTok{ machine\_ids[flagged],}
-  \AttributeTok{distance =} \FunctionTok{round}\NormalTok{(md[flagged], }\DecValTok{2}\NormalTok{)}
+\NormalTok{flag\_classic }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(md\_classic }\SpecialCharTok{\textgreater{}}\NormalTok{ cutoff)    }\CommentTok{\# indices flagged by classic distance}
+\NormalTok{flag\_robust  }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(md\_robust  }\SpecialCharTok{\textgreater{}}\NormalTok{ cutoff)    }\CommentTok{\# indices flagged by robust distance}
+
+\NormalTok{out\_table }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(                            }\CommentTok{\# collect flagged machines}
+  \AttributeTok{classical =} \FunctionTok{data.frame}\NormalTok{(                                       }\CommentTok{\# classic flagged table}
+    \AttributeTok{machine =}\NormalTok{ machines\_sub}\SpecialCharTok{$}\NormalTok{machine[flag\_classic],       }\CommentTok{\# names flagged (classic)}
+    \AttributeTok{distance =} \FunctionTok{round}\NormalTok{(md\_classic[flag\_classic], }\DecValTok{2}\NormalTok{)       }\CommentTok{\# classic distances}
+\NormalTok{  ),}
+  \AttributeTok{robust =} \FunctionTok{data.frame}\NormalTok{(                                          }\CommentTok{\# robust flagged table}
+    \AttributeTok{machine =}\NormalTok{ machines\_sub}\SpecialCharTok{$}\NormalTok{machine[flag\_robust],        }\CommentTok{\# names flagged (robust)}
+    \AttributeTok{distance =} \FunctionTok{round}\NormalTok{(md\_robust[flag\_robust], }\DecValTok{2}\NormalTok{)         }\CommentTok{\# robust distances}
+\NormalTok{  )}
 \NormalTok{)}
+\NormalTok{out\_table                                   }\CommentTok{\# show both tables}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-  index            machine distance
-1    13 honeywell-dps:6/96    22.52
-2    25         ibm-3033:u    26.82
-3    26           ibm-3081    23.13
-4    27         ibm-3081:d    23.20
-5    28         ibm-3083:b    19.11
+$classical
+             machine distance
+1 honeywell-dps:6/96    22.52
+2         ibm-3033:u    26.82
+3           ibm-3081    23.13
+4         ibm-3081:d    23.20
+5         ibm-3083:b    19.11
+
+$robust
+              machine  distance
+1          hp-3000/64    119.24
+2          hp-3000/88    298.05
+3          harris-500    199.95
+4          harris-700    142.50
+5          harris-800    193.55
+6  honeywell-dps:6/96    836.62
+7  honeywell-dps:8/49  18357.81
+8  honeywell-dps:8/50    184.89
+9  honeywell-dps:8/52  21019.73
+10 honeywell-dps:8/62  20905.97
+11         ibm-3033:s   1378.90
+12         ibm-3033:u  17778.19
+13           ibm-3081 161183.02
+14         ibm-3081:d 143480.93
+15         ibm-3083:b  44269.42
+16         ibm-3083:e   5733.22
 \end{verbatim}
 
-These IDs correspond to the spikes in the plot; each mixes unusually
-large/small values across the hardware specs. Next step: contribution
-plots (variable-wise breakdown of the distance) or a robust Mahalanobis
-distance to confirm and prioritize which are true multivariate outliers.
+Interpretation: both classic and robust distances keep most machines
+below the 97.5\% cutoff (≈17.5), showing a fairly homogeneous core of
+machines around a single multivariate centre. A smaller group lies above
+the cutoff in at least one of the two metrics; these correspond to
+atypical combinations of cycle time, memory, cache and channels. The
+robust MCD distances sometimes flag a slightly different set because
+they estimate centre and scatter after downweighting potential outliers,
+which is desirable when searching for systematically atypical
+configurations.
+
+\subsubsection{Who is flagged and which variables drive
+them?}\label{who-is-flagged-and-which-variables-drive-them}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{flagged\_ids }\OtherTok{\textless{}{-}} \FunctionTok{unique}\NormalTok{(}\FunctionTok{c}\NormalTok{(flag\_classic, flag\_robust))   }\CommentTok{\# union of flagged indices}
+
+\NormalTok{center\_c }\OtherTok{\textless{}{-}} \FunctionTok{colMeans}\NormalTok{(num\_vars)                        }\CommentTok{\# classic center}
+\NormalTok{scale\_c }\OtherTok{\textless{}{-}} \FunctionTok{sqrt}\NormalTok{(}\FunctionTok{diag}\NormalTok{(S\_classic))                      }\CommentTok{\# classic scales (SDs)}
+\NormalTok{center\_r }\OtherTok{\textless{}{-}}\NormalTok{ cmcd}\SpecialCharTok{$}\NormalTok{center                               }\CommentTok{\# robust center}
+\NormalTok{scale\_r }\OtherTok{\textless{}{-}} \FunctionTok{sqrt}\NormalTok{(}\FunctionTok{diag}\NormalTok{(cmcd}\SpecialCharTok{$}\NormalTok{cov))                       }\CommentTok{\# robust scales (SDs)}
+
+\CommentTok{\# Approximate per{-}variable contributions: squared standardized deviations (ignores correlation structure)}
+\NormalTok{contrib\_mat\_classic }\OtherTok{\textless{}{-}} \FunctionTok{t}\NormalTok{(}\FunctionTok{apply}\NormalTok{(num\_vars[flagged\_ids, ], }\DecValTok{1}\NormalTok{, }\ControlFlowTok{function}\NormalTok{(x) ((x }\SpecialCharTok{{-}}\NormalTok{ center\_c) }\SpecialCharTok{/}\NormalTok{ scale\_c)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
+\NormalTok{contrib\_mat\_robust  }\OtherTok{\textless{}{-}} \FunctionTok{t}\NormalTok{(}\FunctionTok{apply}\NormalTok{(num\_vars[flagged\_ids, ], }\DecValTok{1}\NormalTok{, }\ControlFlowTok{function}\NormalTok{(x) ((x }\SpecialCharTok{{-}}\NormalTok{ center\_r) }\SpecialCharTok{/}\NormalTok{ scale\_r)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
+\FunctionTok{rownames}\NormalTok{(contrib\_mat\_classic) }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub}\SpecialCharTok{$}\NormalTok{machine[flagged\_ids]  }\CommentTok{\# label rows}
+\FunctionTok{rownames}\NormalTok{(contrib\_mat\_robust)  }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub}\SpecialCharTok{$}\NormalTok{machine[flagged\_ids]}
+
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \FunctionTok{seq\_along}\NormalTok{(flagged\_ids)) \{                   }\CommentTok{\# loop each flagged machine}
+\NormalTok{  mid }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub}\SpecialCharTok{$}\NormalTok{machine[flagged\_ids[i]]         }\CommentTok{\# machine name}
+\NormalTok{  op }\OtherTok{\textless{}{-}} \FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{), }\AttributeTok{mar =} \FunctionTok{c}\NormalTok{(}\DecValTok{4}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{1}\NormalTok{))     }\CommentTok{\# two barplots side by side}
+  \FunctionTok{barplot}\NormalTok{(contrib\_mat\_classic[i, ], }\AttributeTok{main =} \FunctionTok{paste}\NormalTok{(mid, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{classic z\^{}2"}\NormalTok{), }\AttributeTok{las =} \DecValTok{2}\NormalTok{, }\AttributeTok{cex.names =} \FloatTok{0.7}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"contrib"}\NormalTok{)  }\CommentTok{\# classic contributions}
+  \FunctionTok{barplot}\NormalTok{(contrib\_mat\_robust[i, ],  }\AttributeTok{main =} \FunctionTok{paste}\NormalTok{(mid, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{robust z\^{}2"}\NormalTok{),  }\AttributeTok{las =} \DecValTok{2}\NormalTok{, }\AttributeTok{cex.names =} \FloatTok{0.7}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"contrib"}\NormalTok{)  }\CommentTok{\# robust contributions}
+  \FunctionTok{par}\NormalTok{(op)                                             }\CommentTok{\# reset par}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-1.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-2.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-3.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-4.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-5.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-6.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-7.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-8.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-9.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-10.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-11.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-12.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-13.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-14.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-15.pdf}}
+
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-8-16.pdf}}
+
+Interpretation guide: - These barplots show which variables have the
+largest squared standardized deviations for each flagged machine (left:
+classical center/scale; right: robust center/scale). - Large bars point
+to the specs driving the outlying Mahalanobis distance (e.g., unusually
+high memory, channels, or performance). - Robust scaling tempers the
+influence of the bulk; if a bar stays large in both panels, that
+variable is a consistent driver of atypicality.
+
+Friendly readout of three examples:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{examples }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"honeywell{-}dps:6/96"}\NormalTok{, }\StringTok{"ibm{-}3081"}\NormalTok{, }\StringTok{"honeywell{-}dps:8/49"}\NormalTok{)  }\CommentTok{\# pick 3 machines}
+\NormalTok{get\_top }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(mat, id, }\AttributeTok{k =} \DecValTok{3}\NormalTok{) \{                                  }\CommentTok{\# helper to grab top k contributions}
+  \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\NormalTok{id }\SpecialCharTok{\%in\%} \FunctionTok{rownames}\NormalTok{(mat)) }\FunctionTok{return}\NormalTok{(}\ConstantTok{NA}\NormalTok{)                               }\CommentTok{\# handle missing}
+  \FunctionTok{sort}\NormalTok{(mat[id, ], }\AttributeTok{decreasing =} \ConstantTok{TRUE}\NormalTok{)[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{k]                              }\CommentTok{\# largest k entries}
+\NormalTok{\}}
+\NormalTok{example\_top }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(examples, }\ControlFlowTok{function}\NormalTok{(id) \{                         }\CommentTok{\# build list for each example}
+  \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{machine =}\NormalTok{ id,                                                      }\CommentTok{\# machine name}
+    \AttributeTok{classic\_top =} \FunctionTok{round}\NormalTok{(}\FunctionTok{get\_top}\NormalTok{(contrib\_mat\_classic, id), }\DecValTok{2}\NormalTok{),          }\CommentTok{\# top classic contributors}
+    \AttributeTok{robust\_top =} \FunctionTok{round}\NormalTok{(}\FunctionTok{get\_top}\NormalTok{(contrib\_mat\_robust, id), }\DecValTok{2}\NormalTok{)             }\CommentTok{\# top robust contributors}
+\NormalTok{  )}
+\NormalTok{\})}
+\NormalTok{example\_top                                                            }\CommentTok{\# show the list}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[[1]]
+[[1]]$machine
+[1] "honeywell-dps:6/96"
+
+[[1]]$classic_top
+CHMAX  MMAX  MMIN 
+16.75  0.34  0.16 
+
+[[1]]$robust_top
+ MMAX   ERP CHMAX 
+42.02 37.79 36.96 
+
+
+[[2]]
+[[2]]$machine
+[1] "ibm-3081"
+
+[[2]]$classic_top
+ MMIN CHMIN   PRP 
+14.49 14.32 12.51 
+
+[[2]]$robust_top
+    ERP     PRP    MMIN 
+1846.45  982.37  240.27 
+
+
+[[3]]
+[[3]]$machine
+[1] "honeywell-dps:8/49"
+
+[[3]]$classic_top
+MMAX  ERP CACH 
+4.39 1.55 1.45 
+
+[[3]]$robust_top
+   ERP   MMAX    PRP 
+368.21 211.48  59.85 
+\end{verbatim}
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{honeywell-dps:6/96}: dominated by very high \texttt{CHMAX}
+  (channels), with moderate influence from \texttt{MMAX} and
+  \texttt{ERP} in the robust view.
+\item
+  \texttt{ibm-3081}: extreme across memory (\texttt{MMIN},
+  \texttt{MMAX}), cache, and performance (\texttt{PRP}, \texttt{ERP}),
+  especially in the robust scaling where these dwarfish deviations
+  inflate the distance.
+\item
+  \texttt{honeywell-dps:8/49}: stands out for large \texttt{MMAX} and
+  \texttt{CACH}, coupled with higher \texttt{PRP}/\texttt{ERP} relative
+  to the robust center.
+\end{itemize}
+
+\subsection{Summary of the preliminary
+analysis}\label{summary-of-the-preliminary-analysis}
+
+Overall, the subset contains 41 machines with heterogeneous hardware
+characteristics (\texttt{MMIN}, \texttt{MMAX}, \texttt{CACH}, channel
+counts and performance metrics). The comparison between mean, median,
+trimmed and winsorized means, together with the MAD values, highlights
+variables where the bulk of the data is concentrated but a few machines
+deviate substantially from the main group. The covariance matrix and
+Mahalanobis distances confirm this picture: most observations form a
+compact cloud near a common centre, while a small number of models, such
+as \texttt{honeywell-dps:6/96}, \texttt{ibm-3081} and
+\texttt{honeywell-dps:8/49}, display unusually large memory, cache and
+performance values and are flagged as multivariate outliers.
+
+This preliminary step already suggests a dominant ``size/performance''
+gradient in the data, ranging from modest systems to high-end machines.
+This motivates the use of PCA in the next section to summarise that
+multivariate structure with a reduced number of components while
+retaining most of the total variance.
 
 \section{Principal Component Analysis (original vs
 standardized)}\label{principal-component-analysis-original-vs-standardized}
@@ -529,11 +741,15 @@ We compare PCA on raw scales (keeps original units) vs standardized
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{pca\_raw }\OtherTok{\textless{}{-}} \FunctionTok{prcomp}\NormalTok{(num\_vars, }\AttributeTok{center =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{scale. =} \ConstantTok{FALSE}\NormalTok{)}
-\NormalTok{pca\_std }\OtherTok{\textless{}{-}} \FunctionTok{prcomp}\NormalTok{(num\_vars, }\AttributeTok{center =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{scale. =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{pca\_raw }\OtherTok{\textless{}{-}} \FunctionTok{prcomp}\NormalTok{(num\_vars, }\AttributeTok{center =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{scale. =} \ConstantTok{FALSE}\NormalTok{)   }\CommentTok{\# PCA on raw scale}
+\NormalTok{pca\_std }\OtherTok{\textless{}{-}} \FunctionTok{prcomp}\NormalTok{(num\_vars, }\AttributeTok{center =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{scale. =} \ConstantTok{TRUE}\NormalTok{)    }\CommentTok{\# PCA on standardized data}
 
-\NormalTok{pve\_raw }\OtherTok{\textless{}{-}}\NormalTok{ pca\_raw}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(pca\_raw}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
-\NormalTok{pve\_std }\OtherTok{\textless{}{-}}\NormalTok{ pca\_std}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+\CommentTok{\# ensure numeric to avoid class quirks on sdev}
+\NormalTok{sdev\_raw }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(pca\_raw}\SpecialCharTok{$}\NormalTok{sdev)                         }\CommentTok{\# SDs of PCs (raw)}
+\NormalTok{sdev\_std }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{sdev)                         }\CommentTok{\# SDs of PCs (std)}
+
+\NormalTok{pve\_raw }\OtherTok{\textless{}{-}}\NormalTok{ sdev\_raw}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(sdev\_raw}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)                      }\CommentTok{\# proportion variance explained (raw)}
+\NormalTok{pve\_std }\OtherTok{\textless{}{-}}\NormalTok{ sdev\_std}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(sdev\_std}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)                      }\CommentTok{\# proportion variance explained (std)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -544,37 +760,37 @@ Red line marks 95\% cumulative variance target.
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{))}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{))                                          }\CommentTok{\# side{-}by{-}side scree plots}
 \FunctionTok{plot}\NormalTok{(pve\_raw }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\AttributeTok{type =} \StringTok{"b"}\NormalTok{, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{, }\AttributeTok{xlab =} \StringTok{"PC"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"\% variance"}\NormalTok{,}
-     \AttributeTok{main =} \StringTok{"Raw scale"}\NormalTok{)}
-\FunctionTok{lines}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_raw) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\AttributeTok{type =} \StringTok{"b"}\NormalTok{, }\AttributeTok{col =} \StringTok{"blue"}\NormalTok{)}
-\FunctionTok{abline}\NormalTok{(}\AttributeTok{h =} \DecValTok{95}\NormalTok{, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)}
+     \AttributeTok{main =} \StringTok{"Raw scale"}\NormalTok{)                                      }\CommentTok{\# raw PVE}
+\FunctionTok{lines}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_raw) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\AttributeTok{type =} \StringTok{"b"}\NormalTok{, }\AttributeTok{col =} \StringTok{"blue"}\NormalTok{)        }\CommentTok{\# cumulative PVE (raw)}
+\FunctionTok{abline}\NormalTok{(}\AttributeTok{h =} \DecValTok{95}\NormalTok{, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)                          }\CommentTok{\# 95\% line}
 
 \FunctionTok{plot}\NormalTok{(pve\_std }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\AttributeTok{type =} \StringTok{"b"}\NormalTok{, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{, }\AttributeTok{xlab =} \StringTok{"PC"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"\% variance"}\NormalTok{,}
-     \AttributeTok{main =} \StringTok{"Standardized"}\NormalTok{)}
-\FunctionTok{lines}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_std) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\AttributeTok{type =} \StringTok{"b"}\NormalTok{, }\AttributeTok{col =} \StringTok{"blue"}\NormalTok{)}
-\FunctionTok{abline}\NormalTok{(}\AttributeTok{h =} \DecValTok{95}\NormalTok{, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)}
+     \AttributeTok{main =} \StringTok{"Standardized"}\NormalTok{)                                   }\CommentTok{\# standardized PVE}
+\FunctionTok{lines}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_std) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\AttributeTok{type =} \StringTok{"b"}\NormalTok{, }\AttributeTok{col =} \StringTok{"blue"}\NormalTok{)        }\CommentTok{\# cumulative PVE (std)}
+\FunctionTok{abline}\NormalTok{(}\AttributeTok{h =} \DecValTok{95}\NormalTok{, }\AttributeTok{col =} \StringTok{"red"}\NormalTok{, }\AttributeTok{lty =} \DecValTok{2}\NormalTok{)                          }\CommentTok{\# 95\% line}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-10-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-11-1.pdf}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{))}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{))                                          }\CommentTok{\# reset layout}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{k\_raw }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_raw) }\SpecialCharTok{\textgreater{}=} \FloatTok{0.95}\NormalTok{)[}\DecValTok{1}\NormalTok{]}
-\NormalTok{k\_std }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_std) }\SpecialCharTok{\textgreater{}=} \FloatTok{0.95}\NormalTok{)[}\DecValTok{1}\NormalTok{]}
+\NormalTok{k\_raw }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_raw) }\SpecialCharTok{\textgreater{}=} \FloatTok{0.95}\NormalTok{)[}\DecValTok{1}\NormalTok{]                    }\CommentTok{\# PCs needed (raw) for 95\%}
+\NormalTok{k\_std }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_std) }\SpecialCharTok{\textgreater{}=} \FloatTok{0.95}\NormalTok{)[}\DecValTok{1}\NormalTok{]                    }\CommentTok{\# PCs needed (std) for 95\%}
 
 \FunctionTok{data.frame}\NormalTok{(}
-  \AttributeTok{scale =} \FunctionTok{c}\NormalTok{(}\StringTok{"raw"}\NormalTok{, }\StringTok{"standardized"}\NormalTok{),}
-  \AttributeTok{pcs\_needed\_for\_95pct =} \FunctionTok{c}\NormalTok{(k\_raw, k\_std),}
-  \AttributeTok{cumulative\_variance =} \FunctionTok{c}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_raw)[k\_raw], }\FunctionTok{cumsum}\NormalTok{(pve\_std)[k\_std])}
-\NormalTok{)}
+  \AttributeTok{scale =} \FunctionTok{c}\NormalTok{(}\StringTok{"raw"}\NormalTok{, }\StringTok{"standardized"}\NormalTok{),                           }\CommentTok{\# scale type}
+  \AttributeTok{pcs\_needed\_for\_95pct =} \FunctionTok{c}\NormalTok{(k\_raw, k\_std),                     }\CommentTok{\# count of PCs to reach 95\%}
+  \AttributeTok{cumulative\_variance =} \FunctionTok{c}\NormalTok{(}\FunctionTok{cumsum}\NormalTok{(pve\_raw)[k\_raw], }\FunctionTok{cumsum}\NormalTok{(pve\_std)[k\_std])  }\CommentTok{\# achieved cum PVE}
+\NormalTok{)                                                           }\CommentTok{\# show summary}
 \end{Highlighting}
 \end{Shaded}
 
@@ -584,6 +800,24 @@ Red line marks 95\% cumulative variance target.
 2 standardized                    5           0.9724443
 \end{verbatim}
 
+Interpretation: - Raw-scale PCA reaches ≥95\% variance with 2
+components; standardized PCA does so with 5. Because variables are on
+different units (ns vs KB vs counts vs performance), the standardized
+solution is the safer, more interpretable default. - The first
+standardized PC loads heavily (in magnitude) on memory and performance
+(\texttt{MMAX}, \texttt{MMIN}, \texttt{PRP}, \texttt{ERP}, plus
+\texttt{CACH}), so it summarizes overall ``capacity/performance.'' PC2
+contrasts channel capacity (\texttt{CHMAX}) against cycle time and
+minimum channels, hinting at an I/O vs speed axis. - In other words,
+most of the multivariate variability can be compressed into the first
+few standardized components: with only 5 PCs we already achieve at least
+95\% of the total variance, which is a substantial reduction from the
+original 8 dimensions. - Recommendation: for dimension reduction we
+report the standardized PCA and retain the first 5 components (≥95\%
+variance), interpreting PC1 as a scale of overall performance/memory and
+PC2 as a channels vs speed dimension; the remaining retained PCs mostly
+capture finer contrasts between already powerful machines.
+
 \subsection{Loadings and interpretation
 aids}\label{loadings-and-interpretation-aids}
 
@@ -592,7 +826,7 @@ changing interpretation).
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{head}\NormalTok{(pca\_raw}\SpecialCharTok{$}\NormalTok{rotation[, }\DecValTok{1}\SpecialCharTok{:}\FunctionTok{min}\NormalTok{(}\DecValTok{3}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(num\_vars))])}
+\FunctionTok{head}\NormalTok{(pca\_raw}\SpecialCharTok{$}\NormalTok{rotation[, }\DecValTok{1}\SpecialCharTok{:}\FunctionTok{min}\NormalTok{(}\DecValTok{3}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(num\_vars))])  }\CommentTok{\# raw loadings (first PCs)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -608,7 +842,7 @@ CHMAX -0.0007701548 -0.0025019794 -0.0219924018
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{head}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{rotation[, }\DecValTok{1}\SpecialCharTok{:}\FunctionTok{min}\NormalTok{(}\DecValTok{3}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(num\_vars))])}
+\FunctionTok{head}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{rotation[, }\DecValTok{1}\SpecialCharTok{:}\FunctionTok{min}\NormalTok{(}\DecValTok{3}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(num\_vars))])  }\CommentTok{\# standardized loadings (first PCs)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -622,6 +856,53 @@ CHMIN -0.3328552 -0.25326137  0.45179763
 CHMAX -0.1386368  0.79963560 -0.15685676
 \end{verbatim}
 
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{top\_loadings }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(rot, }\AttributeTok{pcs =} \DecValTok{1}\SpecialCharTok{:}\DecValTok{2}\NormalTok{, }\AttributeTok{k =} \DecValTok{3}\NormalTok{) \{              }\CommentTok{\# helper to grab top loadings}
+  \FunctionTok{do.call}\NormalTok{(rbind, }\FunctionTok{lapply}\NormalTok{(pcs, }\ControlFlowTok{function}\NormalTok{(j) \{          }\CommentTok{\# loop over PCs of interest}
+\NormalTok{    ord }\OtherTok{\textless{}{-}} \FunctionTok{order}\NormalTok{(}\FunctionTok{abs}\NormalTok{(rot[, j]), }\AttributeTok{decreasing =} \ConstantTok{TRUE}\NormalTok{)[}\FunctionTok{seq\_len}\NormalTok{(k)]  }\CommentTok{\# top k by abs loading}
+    \FunctionTok{data.frame}\NormalTok{(}
+      \AttributeTok{PC =} \FunctionTok{paste0}\NormalTok{(}\StringTok{"PC"}\NormalTok{, j),                          }\CommentTok{\# which PC}
+      \AttributeTok{variable =} \FunctionTok{rownames}\NormalTok{(rot)[ord],                 }\CommentTok{\# variable name}
+      \AttributeTok{loading =} \FunctionTok{round}\NormalTok{(rot[ord, j], }\DecValTok{3}\NormalTok{),               }\CommentTok{\# signed loading}
+      \AttributeTok{abs\_loading =} \FunctionTok{round}\NormalTok{(}\FunctionTok{abs}\NormalTok{(rot[ord, j]), }\DecValTok{3}\NormalTok{)       }\CommentTok{\# absolute loading}
+\NormalTok{    )}
+\NormalTok{  \}))}
+\NormalTok{\}}
+
+\NormalTok{top\_std }\OtherTok{\textless{}{-}} \FunctionTok{top\_loadings}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{rotation, }\AttributeTok{pcs =} \DecValTok{1}\SpecialCharTok{:}\DecValTok{2}\NormalTok{, }\AttributeTok{k =} \DecValTok{4}\NormalTok{)   }\CommentTok{\# top 4 for std PCs 1{-}2}
+\NormalTok{top\_raw }\OtherTok{\textless{}{-}} \FunctionTok{top\_loadings}\NormalTok{(pca\_raw}\SpecialCharTok{$}\NormalTok{rotation, }\AttributeTok{pcs =} \DecValTok{1}\SpecialCharTok{:}\DecValTok{2}\NormalTok{, }\AttributeTok{k =} \DecValTok{4}\NormalTok{)   }\CommentTok{\# top 4 for raw PCs 1{-}2}
+\FunctionTok{list}\NormalTok{(                                                          }\CommentTok{\# bundle for printing}
+  \AttributeTok{top\_loadings\_standardized =}\NormalTok{ top\_std,                        }\CommentTok{\# report std top loadings}
+  \AttributeTok{top\_loadings\_raw =}\NormalTok{ top\_raw                                  }\CommentTok{\# report raw top loadings}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+$top_loadings_standardized
+       PC variable loading abs_loading
+PRP   PC1      PRP  -0.429       0.429
+ERP   PC1      ERP  -0.427       0.427
+MMAX  PC1     MMAX  -0.387       0.387
+MMIN  PC1     MMIN  -0.386       0.386
+CHMAX PC2    CHMAX   0.800       0.800
+MYCT  PC2     MYCT  -0.399       0.399
+MMIN1 PC2     MMIN  -0.289       0.289
+CHMIN PC2    CHMIN  -0.253       0.253
+
+$top_loadings_raw
+       PC variable loading abs_loading
+MMAX  PC1     MMAX  -0.973       0.973
+MMIN  PC1     MMIN  -0.229       0.229
+MYCT  PC1     MYCT   0.014       0.014
+PRP   PC1      PRP  -0.009       0.009
+MMIN1 PC2     MMIN   0.973       0.973
+MMAX1 PC2     MMAX  -0.229       0.229
+PRP1  PC2      PRP   0.019       0.019
+ERP   PC2      ERP   0.010       0.010
+\end{verbatim}
+
 \subsection{Scores plot (first two
 PCs)}\label{scores-plot-first-two-pcs}
 
@@ -630,18 +911,25 @@ here.
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{scores\_std }\OtherTok{\textless{}{-}} \FunctionTok{as.data.frame}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{x)}
-\NormalTok{scores\_std}\SpecialCharTok{$}\NormalTok{machine }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub}\SpecialCharTok{$}\NormalTok{machine}
+\NormalTok{scores\_std }\OtherTok{\textless{}{-}} \FunctionTok{as.data.frame}\NormalTok{(pca\_std}\SpecialCharTok{$}\NormalTok{x)                    }\CommentTok{\# PCA scores (std)}
+\NormalTok{scores\_std}\SpecialCharTok{$}\NormalTok{machine }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub}\SpecialCharTok{$}\NormalTok{machine               }\CommentTok{\# add machine names}
 
-\FunctionTok{plot}\NormalTok{(scores\_std}\SpecialCharTok{$}\NormalTok{PC1, scores\_std}\SpecialCharTok{$}\NormalTok{PC2, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{,}
+\FunctionTok{plot}\NormalTok{(scores\_std}\SpecialCharTok{$}\NormalTok{PC1, scores\_std}\SpecialCharTok{$}\NormalTok{PC2, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{,           }\CommentTok{\# scatter of PC1 vs PC2}
      \AttributeTok{xlab =} \StringTok{"PC1 (std)"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"PC2 (std)"}\NormalTok{,}
      \AttributeTok{main =} \StringTok{"Scores on standardized data"}\NormalTok{)}
 \FunctionTok{text}\NormalTok{(scores\_std}\SpecialCharTok{$}\NormalTok{PC1, scores\_std}\SpecialCharTok{$}\NormalTok{PC2, }\AttributeTok{labels =}\NormalTok{ scores\_std}\SpecialCharTok{$}\NormalTok{machine,}
-     \AttributeTok{pos =} \DecValTok{3}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.6}\NormalTok{)}
+     \AttributeTok{pos =} \DecValTok{3}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.6}\NormalTok{)                                 }\CommentTok{\# label points}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-13-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-15-1.pdf}}
+
+Interpretation: the standardized score plot shows where machines align
+along the performance/memory axis (PC1) and the channels-vs-speed axis
+(PC2). Machines far to the right on PC1 have higher memory and
+performance ratings, whereas the vertical spread reflects different
+channel configurations relative to cycle time. Labels make it easy to
+relate extreme scores back to specific models when discussing results.
 
 \section{Outlier experiment}\label{outlier-experiment}
 
@@ -650,20 +938,20 @@ standardization).
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{xnew }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{75}\NormalTok{, }\DecValTok{2000}\NormalTok{, }\FloatTok{0.8}\NormalTok{, }\DecValTok{80000}\NormalTok{, }\DecValTok{300}\NormalTok{, }\DecValTok{24}\NormalTok{, }\DecValTok{62}\NormalTok{, }\DecValTok{47}\NormalTok{)}
-\NormalTok{machines\_out }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub}
-\NormalTok{machines\_out[machines\_out}\SpecialCharTok{$}\NormalTok{machine }\SpecialCharTok{==} \StringTok{"hp{-}3000/64"}\NormalTok{, }\FunctionTok{names}\NormalTok{(num\_vars)] }\OtherTok{\textless{}{-}}\NormalTok{ xnew}
+\NormalTok{xnew }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{75}\NormalTok{, }\DecValTok{2000}\NormalTok{, }\FloatTok{0.8}\NormalTok{, }\DecValTok{80000}\NormalTok{, }\DecValTok{300}\NormalTok{, }\DecValTok{24}\NormalTok{, }\DecValTok{62}\NormalTok{, }\DecValTok{47}\NormalTok{)          }\CommentTok{\# injected outlier values}
+\NormalTok{machines\_out }\OtherTok{\textless{}{-}}\NormalTok{ machines\_sub                              }\CommentTok{\# start from subset}
+\NormalTok{machines\_out[machines\_out}\SpecialCharTok{$}\NormalTok{machine }\SpecialCharTok{==} \StringTok{"hp{-}3000/64"}\NormalTok{, }\FunctionTok{names}\NormalTok{(num\_vars)] }\OtherTok{\textless{}{-}}\NormalTok{ xnew  }\CommentTok{\# replace row}
 
-\NormalTok{pca\_out\_classic }\OtherTok{\textless{}{-}} \FunctionTok{prcomp}\NormalTok{(machines\_out[}\FunctionTok{names}\NormalTok{(num\_vars)], }\AttributeTok{center =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{scale. =} \ConstantTok{FALSE}\NormalTok{)}
-\NormalTok{pca\_out\_robust }\OtherTok{\textless{}{-}} \FunctionTok{PcaCov}\NormalTok{(machines\_out[}\FunctionTok{names}\NormalTok{(num\_vars)], }\AttributeTok{cov.control =} \FunctionTok{CovControlMcd}\NormalTok{(), }\AttributeTok{scale =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{pca\_out\_classic }\OtherTok{\textless{}{-}} \FunctionTok{prcomp}\NormalTok{(machines\_out[}\FunctionTok{names}\NormalTok{(num\_vars)], }\AttributeTok{center =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{scale. =} \ConstantTok{FALSE}\NormalTok{)   }\CommentTok{\# classic PCA with outlier}
+\NormalTok{pca\_out\_robust }\OtherTok{\textless{}{-}} \FunctionTok{PcaCov}\NormalTok{(machines\_out[}\FunctionTok{names}\NormalTok{(num\_vars)], }\AttributeTok{cov.control =} \FunctionTok{CovControlMcd}\NormalTok{(), }\AttributeTok{scale =} \ConstantTok{FALSE}\NormalTok{)  }\CommentTok{\# robust PCA}
 
-\NormalTok{pve\_out\_classic }\OtherTok{\textless{}{-}}\NormalTok{ pca\_out\_classic}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(pca\_out\_classic}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
-\NormalTok{pve\_out\_robust }\OtherTok{\textless{}{-}}\NormalTok{ pca\_out\_robust}\SpecialCharTok{@}\NormalTok{eigenvalues }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(pca\_out\_robust}\SpecialCharTok{@}\NormalTok{eigenvalues)}
+\NormalTok{pve\_out\_classic }\OtherTok{\textless{}{-}}\NormalTok{ pca\_out\_classic}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(pca\_out\_classic}\SpecialCharTok{$}\NormalTok{sdev}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)  }\CommentTok{\# PVE classic}
+\NormalTok{pve\_out\_robust }\OtherTok{\textless{}{-}}\NormalTok{ pca\_out\_robust}\SpecialCharTok{@}\NormalTok{eigenvalues }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(pca\_out\_robust}\SpecialCharTok{@}\NormalTok{eigenvalues)  }\CommentTok{\# PVE robust}
 
 \FunctionTok{data.frame}\NormalTok{(}
-  \AttributeTok{component =} \FunctionTok{seq\_along}\NormalTok{(pve\_out\_classic),}
-  \AttributeTok{classic\_pct =} \FunctionTok{round}\NormalTok{(pve\_out\_classic }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\DecValTok{2}\NormalTok{),}
-  \AttributeTok{robust\_pct =} \FunctionTok{round}\NormalTok{(pve\_out\_robust }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\DecValTok{2}\NormalTok{)}
+  \AttributeTok{component =} \FunctionTok{seq\_along}\NormalTok{(pve\_out\_classic),                 }\CommentTok{\# component index}
+  \AttributeTok{classic\_pct =} \FunctionTok{round}\NormalTok{(pve\_out\_classic }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\DecValTok{2}\NormalTok{),          }\CommentTok{\# classic PVE (\%)}
+  \AttributeTok{robust\_pct =} \FunctionTok{round}\NormalTok{(pve\_out\_robust }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\DecValTok{2}\NormalTok{)             }\CommentTok{\# robust PVE (\%)}
 \NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
@@ -680,6 +968,14 @@ standardization).
 8         8        0.00       0.00
 \end{verbatim}
 
+This table allows us to compare how the injected outlier redistributes
+the variance across components under the classical and robust
+approaches. In the classical PCA, the first eigenvalue typically
+inflates and captures a very large share of the variance because the
+outlier dominates the covariance structure. In contrast, the robust
+eigenvalues stay closer to what we observed without the outlier, meaning
+that the bulk geometry is preserved.
+
 \subsection{Visual comparison: scores}\label{visual-comparison-scores}
 
 Outlier effect: in classical PCA, the first axis often aligns with the
@@ -687,24 +983,24 @@ extreme point; robust PCA should stay closer to the bulk structure.
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{))}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{))                                       }\CommentTok{\# two plots}
 \FunctionTok{plot}\NormalTok{(pca\_out\_classic}\SpecialCharTok{$}\NormalTok{x[,}\DecValTok{1}\NormalTok{], pca\_out\_classic}\SpecialCharTok{$}\NormalTok{x[,}\DecValTok{2}\NormalTok{], }\AttributeTok{pch =} \DecValTok{19}\NormalTok{,}
-     \AttributeTok{main =} \StringTok{"Classic PCA with outlier"}\NormalTok{, }\AttributeTok{xlab =} \StringTok{"PC1"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"PC2"}\NormalTok{)}
+     \AttributeTok{main =} \StringTok{"Classic PCA with outlier"}\NormalTok{, }\AttributeTok{xlab =} \StringTok{"PC1"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"PC2"}\NormalTok{)  }\CommentTok{\# classic scores}
 \FunctionTok{text}\NormalTok{(pca\_out\_classic}\SpecialCharTok{$}\NormalTok{x[,}\DecValTok{1}\NormalTok{], pca\_out\_classic}\SpecialCharTok{$}\NormalTok{x[,}\DecValTok{2}\NormalTok{],}
-     \AttributeTok{labels =}\NormalTok{ machines\_out}\SpecialCharTok{$}\NormalTok{machine, }\AttributeTok{pos =} \DecValTok{3}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.5}\NormalTok{)}
+     \AttributeTok{labels =}\NormalTok{ machines\_out}\SpecialCharTok{$}\NormalTok{machine, }\AttributeTok{pos =} \DecValTok{3}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.5}\NormalTok{)              }\CommentTok{\# labels}
 
 \FunctionTok{plot}\NormalTok{(pca\_out\_robust}\SpecialCharTok{@}\NormalTok{scores[,}\DecValTok{1}\NormalTok{], pca\_out\_robust}\SpecialCharTok{@}\NormalTok{scores[,}\DecValTok{2}\NormalTok{], }\AttributeTok{pch =} \DecValTok{19}\NormalTok{,}
-     \AttributeTok{main =} \StringTok{"Robust PCA (MCD)"}\NormalTok{, }\AttributeTok{xlab =} \StringTok{"PC1"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"PC2"}\NormalTok{)}
+     \AttributeTok{main =} \StringTok{"Robust PCA (MCD)"}\NormalTok{, }\AttributeTok{xlab =} \StringTok{"PC1"}\NormalTok{, }\AttributeTok{ylab =} \StringTok{"PC2"}\NormalTok{)          }\CommentTok{\# robust scores}
 \FunctionTok{text}\NormalTok{(pca\_out\_robust}\SpecialCharTok{@}\NormalTok{scores[,}\DecValTok{1}\NormalTok{], pca\_out\_robust}\SpecialCharTok{@}\NormalTok{scores[,}\DecValTok{2}\NormalTok{],}
-     \AttributeTok{labels =}\NormalTok{ machines\_out}\SpecialCharTok{$}\NormalTok{machine, }\AttributeTok{pos =} \DecValTok{3}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.5}\NormalTok{)}
+     \AttributeTok{labels =}\NormalTok{ machines\_out}\SpecialCharTok{$}\NormalTok{machine, }\AttributeTok{pos =} \DecValTok{3}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.5}\NormalTok{)              }\CommentTok{\# labels}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-15-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-17-1.pdf}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{))}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{))                                       }\CommentTok{\# reset layout}
 \end{Highlighting}
 \end{Shaded}
 
@@ -717,36 +1013,57 @@ PCA)}\label{distance-diagnostics-robust-pca}
 \end{Highlighting}
 \end{Shaded}
 
-\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-16-1.pdf}}
+\pandocbounded{\includegraphics[keepaspectratio]{report_files/figure-pdf/unnamed-chunk-18-1.pdf}}
 
-\section{Decisions and conclusions}\label{decisions-and-conclusions}
+\section{Decisions}\label{decisions}
 
 \begin{itemize}
 \tightlist
 \item
-  Classical summaries provide a baseline; compare trimmed/winsorized
-  means and MAD to flag skew/heavy tails.
+  For exploratory analysis we rely on classical summaries to describe
+  central tendency and spread, but interpret them in parallel with
+  robust statistics (trimmed and winsorized means, MAD and MCD-based
+  Mahalanobis distances) to avoid being misled by a few extreme
+  machines.
 \item
-  PCA on raw scale vs standardized: choose the variant that reaches
-  ≥95\% variance with fewer components and clearer loadings; document
-  which variables dominate each retained PC.
+  For dimension reduction we base our decision on the proportion of
+  variance explained and interpretability of the loadings: we favour the
+  standardized PCA and retain the first 5 principal components, which
+  already explain at least 95\% of the total variance in the eight
+  numeric variables.
 \item
-  With the injected outlier, classical PCA reorients strongly toward the
-  extreme point (variance inflation, first PC dominated by the outlier).
-  The MCD-based PCA keeps stable directions and variance shares.
-\item
-  For reporting: state which PCA you recommend (often standardized if
-  scales differ), how many components you keep (based on the 95\% rule),
-  and how the outlier analysis supports the robustness choice.
+  When a single atypical observation is present, we use robust PCA based
+  on the MCD covariance estimate to describe the multivariate structure
+  of the bulk of the data, and treat the classical PCA mainly as a
+  diagnostic to illustrate the effect of the outlier.
 \end{itemize}
 
-Suggestion for the written summary (fill in after rendering): - Data
-shape and key variable ranges; any clear skew or heavy tails. - Which
-PCA you selected (raw vs standardized), how many PCs kept for 95\%, and
-how you interpret PC1/PC2 loadings. - What changed after adding the
-outlier; how robust PCA mitigated it. - Brief limitations (small sample,
-historical hardware data) and next steps (e.g., more robust checks or
-alternative outlier rules).
+\section{Conclusions}\label{conclusions}
+
+The subset of \texttt{machines} data considered here exhibits a clear
+gradient from low to high capability systems, mainly driven by memory
+size, cache and performance measures. The preliminary analysis using
+classical and robust summaries, together with Mahalanobis distances,
+shows that most machines cluster around a central configuration while a
+small number of high-end models stand out as multivariate outliers.
+
+Standardized PCA provides an effective summary of this structure: with
+only 5 components we retain at least 95\% of the total variance and
+obtain interpretable directions, where the first component captures an
+overall performance/memory level and the second contrasts channel
+capacity with speed. Plotting the scores on these components reveals how
+specific named machines occupy different regions of the
+performance--channels trade-off.
+
+After injecting the artificial outlier, classical PCA becomes strongly
+influenced by this single observation, reallocating a large share of
+variance to the first component and distorting the geometry of the
+remaining points. In contrast, the MCD-based robust PCA keeps the
+eigenvalues and loading patterns closer to the original analysis and
+clearly isolates the modified machine in the outlier map. This
+comparison illustrates the vulnerability of classical PCA to even one
+atypical observation and motivates the use of robust methods when data
+contamination is plausible.
 
 \section{Bibliography}\label{bibliography}
 
