@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="quarto-1.7.32" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+<meta name="author" content="Grupo" />
+<meta name="dcterms.date" content="2025-12-09" />
+
+<title>PCA and Outlier Analysis on Machines Data</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+<!-- htmldependencies:E3FAD763 -->
+<link href="report_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+<script src="report_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <div id="quarto-toc-target"></div>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">PCA and Outlier Analysis on Machines Data</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Grupo </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">December 9, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction"><span class="header-section-number">1</span> Introduction</a></li>
+  <li><a href="#setup-and-data" id="toc-setup-and-data"><span class="header-section-number">2</span> Setup and data</a></li>
+  <li><a href="#exploratory-summaries" id="toc-exploratory-summaries"><span class="header-section-number">3</span> Exploratory summaries</a>
+  <ul>
+  <li><a href="#classical-vs-robust-locationscale" id="toc-classical-vs-robust-locationscale"><span class="header-section-number">3.1</span> Classical vs robust location/scale</a></li>
+  <li><a href="#covariance-total-and-generalized-variance" id="toc-covariance-total-and-generalized-variance"><span class="header-section-number">3.2</span> Covariance, total and generalized variance</a></li>
+  <li><a href="#mahalanobis-distances-classical" id="toc-mahalanobis-distances-classical"><span class="header-section-number">3.3</span> Mahalanobis distances (classical)</a></li>
+  </ul></li>
+  <li><a href="#principal-component-analysis-original-vs-standardized" id="toc-principal-component-analysis-original-vs-standardized"><span class="header-section-number">4</span> Principal Component Analysis (original vs standardized)</a>
+  <ul>
+  <li><a href="#scree-plots-and-variance-explained" id="toc-scree-plots-and-variance-explained"><span class="header-section-number">4.1</span> Scree plots and variance explained</a></li>
+  <li><a href="#loadings-and-interpretation-aids" id="toc-loadings-and-interpretation-aids"><span class="header-section-number">4.2</span> Loadings and interpretation aids</a></li>
+  <li><a href="#scores-plot-first-two-pcs" id="toc-scores-plot-first-two-pcs"><span class="header-section-number">4.3</span> Scores plot (first two PCs)</a></li>
+  </ul></li>
+  <li><a href="#outlier-experiment" id="toc-outlier-experiment"><span class="header-section-number">5</span> Outlier experiment</a>
+  <ul>
+  <li><a href="#visual-comparison-scores" id="toc-visual-comparison-scores"><span class="header-section-number">5.1</span> Visual comparison: scores</a>
+  <ul>
+  <li><a href="#distance-diagnostics-robust-pca" id="toc-distance-diagnostics-robust-pca"><span class="header-section-number">5.1.1</span> Distance diagnostics (robust PCA)</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#decisions-and-conclusions" id="toc-decisions-and-conclusions"><span class="header-section-number">6</span> Decisions and conclusions</a></li>
+  <li><a href="#bibliography" id="toc-bibliography"><span class="header-section-number">7</span> Bibliography</a></li>
+  </ul>
+</nav>
+<section id="introduction" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<p>This report walks through a pedagogical analysis of a subset of the <code>machines</code> data from the <code>rrcov</code> package (rows <strong>hp-3000/64</strong> to <strong>ibm-4331-2</strong>). Goals: - Describe the variables with both classical and robust summaries. - Run PCA on the raw scale and on standardized variables; compare explained variance and choose components that keep ≥95% of total variance. - Study the impact of a deliberately injected outlier using classical PCA and a robust PCA based on the Minimum Covariance Determinant (MCD).</p>
+</section>
+<section id="setup-and-data" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Setup and data</h1>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages(c(&quot;rrcov&quot;, &quot;robustbase&quot;), repos = &quot;https://cloud.r-project.org&quot;)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rrcov)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(robustbase)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(machines)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>machines_sub <span class="ot">&lt;-</span> machines[<span class="dv">71</span><span class="sc">:</span><span class="dv">111</span>, ]                  <span class="co"># hp-3000/64 ... ibm-4331-2</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>machines_sub<span class="sc">$</span>machine <span class="ot">&lt;-</span> <span class="fu">rownames</span>(machines_sub)      <span class="co"># keep names for plotting</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(machines_sub) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(machines_sub, <span class="dv">3</span>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["MYCT"],"name":[1],"type":["int"],"align":["right"]},{"label":["MMIN"],"name":[2],"type":["int"],"align":["right"]},{"label":["MMAX"],"name":[3],"type":["int"],"align":["right"]},{"label":["CACH"],"name":[4],"type":["int"],"align":["right"]},{"label":["CHMIN"],"name":[5],"type":["int"],"align":["right"]},{"label":["CHMAX"],"name":[6],"type":["int"],"align":["right"]},{"label":["PRP"],"name":[7],"type":["int"],"align":["right"]},{"label":["ERP"],"name":[8],"type":["int"],"align":["right"]},{"label":["machine"],"name":[9],"type":["chr"],"align":["left"]}],"data":[{"1":"75","2":"2000","3":"8000","4":"8","5":"3","6":"24","7":"62","8":"47","9":"hp-3000/64","_rn_":"1"},{"1":"75","2":"3000","3":"8000","4":"8","5":"3","6":"48","7":"64","8":"54","9":"hp-3000/88","_rn_":"2"},{"1":"175","2":"256","3":"2000","4":"0","5":"3","6":"24","7":"22","8":"20","9":"hp-3000/iii","_rn_":"3"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(machines_sub)</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      MYCT             MMIN            MMAX            CACH      
+ Min.   :  26.0   Min.   :   96   Min.   :  512   Min.   : 0.00  
+ 1st Qu.: 140.0   1st Qu.:  768   1st Qu.: 3000   1st Qu.: 0.00  
+ Median : 300.0   Median : 1000   Median : 4000   Median : 4.00  
+ Mean   : 322.7   Mean   : 2435   Mean   : 9812   Mean   :10.41  
+ 3rd Qu.: 330.0   3rd Qu.: 2000   3rd Qu.:12000   3rd Qu.: 8.00  
+ Max.   :1100.0   Max.   :16000   Max.   :32000   Max.   :64.00  
+     CHMIN            CHMAX             PRP           ERP        
+ Min.   : 1.000   Min.   :  1.00   Min.   :  6   Min.   : 15.00  
+ 1st Qu.: 1.000   1st Qu.:  2.00   1st Qu.: 22   1st Qu.: 23.00  
+ Median : 1.000   Median : 20.00   Median : 38   Median : 30.00  
+ Mean   : 3.171   Mean   : 20.39   Mean   : 80   Mean   : 69.34  
+ 3rd Qu.: 4.000   3rd Qu.: 24.00   3rd Qu.: 66   3rd Qu.: 57.00  
+ Max.   :16.000   Max.   :112.00   Max.   :465   Max.   :361.00  
+   machine         
+ Length:41         
+ Class :character  
+ Mode  :character  
+                   
+                   
+                   </code></pre>
+</div>
+</div>
+<p>Helper functions for trimmed/winsorized means and total/generalized variance:</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>winsor_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.95</span>)) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  qs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x, probs, <span class="at">names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="fu">pmin</span>(<span class="fu">pmax</span>(x, qs[<span class="dv">1</span>]), qs[<span class="dv">2</span>]))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>total_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">sum</span>(<span class="fu">diag</span>(S))</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>generalized_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">determinant</span>(S, <span class="at">logarithm =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>modulus</span></code></pre></div>
+</details>
+</div>
+</section>
+<section id="exploratory-summaries" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Exploratory summaries</h1>
+<section id="classical-vs-robust-locationscale" class="level2" data-number="3.1">
+<h2 data-number="3.1"><span class="header-section-number">3.1</span> Classical vs robust location/scale</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>num_vars <span class="ot">&lt;-</span> machines_sub[ , <span class="fu">setdiff</span>(<span class="fu">names</span>(machines_sub), <span class="st">&quot;machine&quot;</span>)]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>stat_table <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable =</span> <span class="fu">names</span>(num_vars),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean =</span> <span class="fu">sapply</span>(num_vars, mean),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">median =</span> <span class="fu">sapply</span>(num_vars, median),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">trimmed_mean =</span> <span class="fu">sapply</span>(num_vars, mean, <span class="at">trim =</span> <span class="fl">0.1</span>),</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">winsor_mean =</span> <span class="fu">sapply</span>(num_vars, winsor_mean),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sd =</span> <span class="fu">sapply</span>(num_vars, sd),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">var =</span> <span class="fu">sapply</span>(num_vars, var),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">mad =</span> <span class="fu">sapply</span>(num_vars, mad)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>stat_table</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["mean"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["median"],"name":[3],"type":["int"],"align":["right"]},{"label":["trimmed_mean"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["winsor_mean"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["sd"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["var"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["mad"],"name":[8],"type":["dbl"],"align":["right"]}],"data":[{"1":"MYCT","2":"322.707317","3":"300","4":"276.575758","5":"312.951220","6":"301.747845","7":"9.105176e+04","8":"237.2160","_rn_":"MYCT"},{"1":"MMIN","2":"2435.121951","3":"1000","4":"1542.787879","5":"2050.341463","6":"3563.887261","7":"1.270129e+07","8":"1103.0544","_rn_":"MMIN"},{"1":"MMAX","2":"9811.707317","3":"4000","4":"8212.121212","5":"9829.268293","6":"10584.538663","7":"1.120325e+08","8":"4447.8000","_rn_":"MMAX"},{"1":"CACH","2":"10.414634","3":"4","4":"6.151515","5":"10.414634","6":"17.915043","7":"3.209488e+02","8":"5.9304","_rn_":"CACH"},{"1":"CHMIN","2":"3.170732","3":"1","4":"2.484848","5":"2.878049","6":"3.390446","7":"1.149512e+01","8":"0.0000","_rn_":"CHMIN"},{"1":"CHMAX","2":"20.390244","3":"20","4":"16.606061","5":"18.731707","6":"22.381776","7":"5.009439e+02","8":"20.7564","_rn_":"CHMAX"},{"1":"PRP","2":"80.000000","3":"38","4":"54.575758","5":"71.048780","6":"108.868728","7":"1.185240e+04","8":"32.6172","_rn_":"PRP"},{"1":"ERP","2":"69.341463","3":"30","4":"50.393939","5":"62.829268","6":"84.751286","7":"7.182780e+03","8":"17.7912","_rn_":"ERP"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+</section>
+<section id="covariance-total-and-generalized-variance" class="level2" data-number="3.2">
+<h2 data-number="3.2"><span class="header-section-number">3.2</span> Covariance, total and generalized variance</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>S_classic <span class="ot">&lt;-</span> <span class="fu">cov</span>(num_vars)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>total_var <span class="ot">&lt;-</span> <span class="fu">total_variance</span>(S_classic)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>gen_var_log <span class="ot">&lt;-</span> <span class="fu">generalized_variance</span>(S_classic)  <span class="co"># log-determinant for stability</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">covariance_matrix =</span> S_classic,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_variance =</span> total_var,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">generalized_variance_log =</span> gen_var_log</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>$covariance_matrix
+               MYCT         MMIN         MMAX         CACH        CHMIN
+MYCT     91051.7622  -432377.463  -1609363.49  -2092.07561  -440.823780
+MMIN   -432377.4634 12701292.410  24690893.74  41241.87317  8756.653659
+MMAX  -1609363.4878 24690893.737 112032458.71 138025.22439 17389.951220
+CACH     -2092.0756    41241.873    138025.22    320.94878    33.402439
+CHMIN     -440.8238     8756.654     17389.95     33.40244    11.495122
+CHMAX    -2618.3579     3924.551     92296.42    110.28415     4.831707
+PRP     -15881.2000   359417.800    968283.00   1556.55000   277.225000
+ERP     -11618.7226   263724.107    820483.00   1253.72988   187.415244
+             CHMAX        PRP         ERP
+MYCT  -2618.357927 -15881.200 -11618.7226
+MMIN   3924.551220 359417.800 263724.1073
+MMAX  92296.417073 968283.000 820483.0024
+CACH    110.284146   1556.550   1253.7299
+CHMIN     4.831707    277.225    187.4152
+CHMAX   500.943902    442.150    481.2134
+PRP     442.150000  11852.400   8981.1000
+ERP     481.213415   8981.100   7182.7805
+
+$total_variance
+[1] 124844671
+
+$generalized_variance_log
+[1] 67.78829
+attr(,&quot;logarithm&quot;)
+[1] TRUE</code></pre>
+</div>
+</div>
+</section>
+<section id="mahalanobis-distances-classical" class="level2" data-number="3.3">
+<h2 data-number="3.3"><span class="header-section-number">3.3</span> Mahalanobis distances (classical)</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>md <span class="ot">&lt;-</span> <span class="fu">mahalanobis</span>(num_vars, <span class="at">center =</span> <span class="fu">colMeans</span>(num_vars), <span class="at">cov =</span> S_classic)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>cutoff <span class="ot">&lt;-</span> <span class="fu">qchisq</span>(<span class="fl">0.975</span>, <span class="at">df =</span> <span class="fu">ncol</span>(num_vars))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(md, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">main =</span> <span class="st">&quot;Mahalanobis distances&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;Distance&quot;</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> cutoff, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672" /></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="principal-component-analysis-original-vs-standardized" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Principal Component Analysis (original vs standardized)</h1>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>pca_raw <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(num_vars, <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>pca_std <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(num_vars, <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>pve_raw <span class="ot">&lt;-</span> pca_raw<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_raw<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>pve_std <span class="ot">&lt;-</span> pca_std<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_std<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>)</span></code></pre></div>
+</details>
+</div>
+<section id="scree-plots-and-variance-explained" class="level2" data-number="4.1">
+<h2 data-number="4.1"><span class="header-section-number">4.1</span> Scree plots and variance explained</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pve_raw <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">xlab =</span> <span class="st">&quot;PC&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;% variance&quot;</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Raw scale&quot;</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">cumsum</span>(pve_raw) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">95</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pve_std <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">xlab =</span> <span class="st">&quot;PC&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;% variance&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Standardized&quot;</span>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">cumsum</span>(pve_std) <span class="sc">*</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">&quot;b&quot;</span>, <span class="at">col =</span> <span class="st">&quot;blue&quot;</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">95</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672" /></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>k_raw <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">cumsum</span>(pve_raw) <span class="sc">&gt;=</span> <span class="fl">0.95</span>)[<span class="dv">1</span>]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>k_std <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">cumsum</span>(pve_std) <span class="sc">&gt;=</span> <span class="fl">0.95</span>)[<span class="dv">1</span>]</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">scale =</span> <span class="fu">c</span>(<span class="st">&quot;raw&quot;</span>, <span class="st">&quot;standardized&quot;</span>),</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">pcs_needed_for_95pct =</span> <span class="fu">c</span>(k_raw, k_std),</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">cumulative_variance =</span> <span class="fu">c</span>(<span class="fu">cumsum</span>(pve_raw)[k_raw], <span class="fu">cumsum</span>(pve_std)[k_std])</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":["scale"],"name":[1],"type":["chr"],"align":["left"]},{"label":["pcs_needed_for_95pct"],"name":[2],"type":["int"],"align":["right"]},{"label":["cumulative_variance"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"raw","2":"2","3":"0.9994522"},{"1":"standardized","2":"5","3":"0.9724443"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+</section>
+<section id="loadings-and-interpretation-aids" class="level2" data-number="4.2">
+<h2 data-number="4.2"><span class="header-section-number">4.2</span> Loadings and interpretation aids</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pca_raw<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="fu">min</span>(<span class="dv">3</span>, <span class="fu">ncol</span>(num_vars))])</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                PC1           PC2           PC3
+MYCT   0.0141412358 -0.0077399303  0.9994839149
+MMIN  -0.2286221980  0.9731769922  0.0106566935
+MMAX  -0.9733452865 -0.2289360796  0.0119681990
+CACH  -0.0012202199  0.0012445172  0.0001322595
+CHMIN -0.0001606719  0.0006590092 -0.0020541284
+CHMAX -0.0007701548 -0.0025019794 -0.0219924018</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pca_std<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="fu">min</span>(<span class="dv">3</span>, <span class="fu">ncol</span>(num_vars))])</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>             PC1         PC2         PC3
+MYCT   0.2609775 -0.39938737 -0.72811374
+MMIN  -0.3860768 -0.28892323  0.06954451
+MMAX  -0.3871015  0.16725096 -0.28349782
+CACH  -0.3699990  0.01382335 -0.32360056
+CHMIN -0.3328552 -0.25326137  0.45179763
+CHMAX -0.1386368  0.79963560 -0.15685676</code></pre>
+</div>
+</div>
+</section>
+<section id="scores-plot-first-two-pcs" class="level2" data-number="4.3">
+<h2 data-number="4.3"><span class="header-section-number">4.3</span> Scores plot (first two PCs)</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>scores_std <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pca_std<span class="sc">$</span>x)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>scores_std<span class="sc">$</span>machine <span class="ot">&lt;-</span> machines_sub<span class="sc">$</span>machine</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(scores_std<span class="sc">$</span>PC1, scores_std<span class="sc">$</span>PC2, <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;PC1 (std)&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;PC2 (std)&quot;</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Scores on standardized data&quot;</span>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(scores_std<span class="sc">$</span>PC1, scores_std<span class="sc">$</span>PC2, <span class="at">labels =</span> scores_std<span class="sc">$</span>machine,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.6</span>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672" /></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="outlier-experiment" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Outlier experiment</h1>
+<p>Introduce the atypical point at the former <code>hp-3000/64</code> row (no standardization).</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>xnew <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">75</span>, <span class="dv">2000</span>, <span class="fl">0.8</span>, <span class="dv">80000</span>, <span class="dv">300</span>, <span class="dv">24</span>, <span class="dv">62</span>, <span class="dv">47</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>machines_out <span class="ot">&lt;-</span> machines_sub</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>machines_out[machines_out<span class="sc">$</span>machine <span class="sc">==</span> <span class="st">&quot;hp-3000/64&quot;</span>, <span class="fu">names</span>(num_vars)] <span class="ot">&lt;-</span> xnew</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>pca_out_classic <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(machines_out[<span class="fu">names</span>(num_vars)], <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>pca_out_robust <span class="ot">&lt;-</span> <span class="fu">PcaCov</span>(machines_out[<span class="fu">names</span>(num_vars)], <span class="at">cov.control =</span> <span class="fu">CovControlMcd</span>(), <span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>pve_out_classic <span class="ot">&lt;-</span> pca_out_classic<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca_out_classic<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>pve_out_robust <span class="ot">&lt;-</span> pca_out_robust<span class="sc">@</span>eigenvalues <span class="sc">/</span> <span class="fu">sum</span>(pca_out_robust<span class="sc">@</span>eigenvalues)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">component =</span> <span class="fu">seq_along</span>(pve_out_classic),</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">classic_pct =</span> <span class="fu">round</span>(pve_out_classic <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">2</span>),</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">robust_pct =</span> <span class="fu">round</span>(pve_out_robust <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">2</span>)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":["component"],"name":[1],"type":["int"],"align":["right"]},{"label":["classic_pct"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["robust_pct"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"1","2":"57.96","3":"89.76"},{"1":"2","2":"39.58","3":"7.87"},{"1":"3","2":"2.44","3":"2.36"},{"1":"4","2":"0.02","3":"0.00"},{"1":"5","2":"0.00","3":"0.00"},{"1":"6","2":"0.00","3":"0.00"},{"1":"7","2":"0.00","3":"0.00"},{"1":"8","2":"0.00","3":"0.00"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+<section id="visual-comparison-scores" class="level2" data-number="5.1">
+<h2 data-number="5.1"><span class="header-section-number">5.1</span> Visual comparison: scores</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_classic<span class="sc">$</span>x[,<span class="dv">1</span>], pca_out_classic<span class="sc">$</span>x[,<span class="dv">2</span>], <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Classic PCA with outlier&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;PC1&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;PC2&quot;</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(pca_out_classic<span class="sc">$</span>x[,<span class="dv">1</span>], pca_out_classic<span class="sc">$</span>x[,<span class="dv">2</span>],</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> machines_out<span class="sc">$</span>machine, <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_robust<span class="sc">@</span>scores[,<span class="dv">1</span>], pca_out_robust<span class="sc">@</span>scores[,<span class="dv">2</span>], <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;Robust PCA (MCD)&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;PC1&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;PC2&quot;</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(pca_out_robust<span class="sc">@</span>scores[,<span class="dv">1</span>], pca_out_robust<span class="sc">@</span>scores[,<span class="dv">2</span>],</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> machines_out<span class="sc">$</span>machine, <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672" /></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div>
+</details>
+</div>
+<section id="distance-diagnostics-robust-pca" class="level3" data-number="5.1.1">
+<h3 data-number="5.1.1"><span class="header-section-number">5.1.1</span> Distance diagnostics (robust PCA)</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r cell-code"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_out_robust)  <span class="co"># outlier map: orthogonal vs score distances</span></span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure>
+<p><img src="report_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="672" /></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="decisions-and-conclusions" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Decisions and conclusions</h1>
+<ul>
+<li>Classical summaries provide a baseline; compare trimmed/winsorized means and MAD to flag skew/heavy tails.</li>
+<li>PCA on raw scale vs standardized: choose the variant that reaches ≥95% variance with fewer components and clearer loadings; document which variables dominate each retained PC.</li>
+<li>With the injected outlier, classical PCA reorients strongly toward the extreme point (variance inflation, first PC dominated by the outlier). The MCD-based PCA keeps stable directions and variance shares.</li>
+<li>For reporting: state which PCA you recommend (often standardized if scales differ), how many components you keep (based on the 95% rule), and how the outlier analysis supports the robustness choice.</li>
+</ul>
+</section>
+<section id="bibliography" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Bibliography</h1>
+<ul>
+<li>Jolliffe, I. T. (2002). <em>Principal Component Analysis</em>. Springer.</li>
+<li>Todorov, V., &amp; Filzmoser, P. (2009). An object oriented framework for robust multivariate analysis. <em>Journal of Statistical Software</em>, 32(3), 1–47. ***</li>
+</ul>
+</section>
+
+</main>
+<!-- /main column -->
+<script id = "quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+</body>
+
+</html>
