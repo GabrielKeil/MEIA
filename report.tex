@@ -339,6 +339,51 @@ This report walks through an analysis of a subset of the
   for labels, not for analysis.
 \end{itemize}
 
+Historically, these data come from the Computer Hardware dataset
+describing mainframe computers from the 1970s--1980s. Each row
+corresponds to a specific machine model, with hardware specifications
+(cycle time, memory, cache, number of I/O channels) and two performance
+measures. The variables \texttt{CHMIN} and \texttt{CHMAX} denote the
+minimum and maximum number of I/O channels the system can be configured
+with, so they reflect scalability for small versus large installations.
+
+To make the variables more concrete, consider two machines in our
+subset:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{hp-3000/iii} has \texttt{MYCT\ =\ 175} ns (slower CPU),
+  \texttt{MMIN\ =\ 256} KB and \texttt{MMAX\ =\ 2000} KB of memory, no
+  cache and between 3 and 24 channels (\texttt{CHMIN\ =\ 3},
+  \texttt{CHMAX\ =\ 24}), with published performance
+  \texttt{PRP\ =\ 22}. This is a relatively modest system in both memory
+  and performance.
+\item
+  \texttt{ibm-3081} has \texttt{MYCT\ =\ 26} ns (much faster),
+  \texttt{MMIN\ =\ 16000} KB and \texttt{MMAX\ =\ 32000} KB of memory,
+  cache \texttt{CACH\ =\ 64}, between 16 and 24 channels, and
+  \texttt{PRP\ =\ 465}. It represents a high-end configuration with far
+  greater memory and throughput capability.
+\end{itemize}
+
+These contrasts illustrate how larger memory, more channels and lower
+cycle time are associated with higher performance measures, which is
+precisely the multivariate relationship we summarise with PCA in later
+sections.
+
+Before any formal analysis, these hardware considerations give us clear
+prior expectations: we anticipate a strong negative association between
+\texttt{MYCT} and the performance variables, and positive associations
+between \texttt{MMIN}, \texttt{MMAX}, \texttt{CACH}, the channel counts
+and \texttt{PRP}/\texttt{ERP}. We also expect \texttt{PRP} and
+\texttt{ERP} to be highly correlated, since both are measuring the same
+underlying notion of computing power. In terms of PCA, a natural prior
+is that the leading standardized component will reflect an overall
+``size/performance'' level combining memory, cache and performance,
+while a secondary component may capture differences in channel
+configuration relative to speed.
+
 Quick look at the machine names:
 
 \begin{Shaded}
@@ -538,23 +583,23 @@ $classical
 5         ibm-3083:b    19.11
 
 $robust
-              machine  distance
-1          hp-3000/64    119.24
-2          hp-3000/88    298.05
-3          harris-500    199.95
-4          harris-700    142.50
-5          harris-800    193.55
-6  honeywell-dps:6/96    836.62
-7  honeywell-dps:8/49  18357.81
-8  honeywell-dps:8/50    184.89
-9  honeywell-dps:8/52  21019.73
-10 honeywell-dps:8/62  20905.97
-11         ibm-3033:s   1378.90
-12         ibm-3033:u  17778.19
-13           ibm-3081 161183.02
-14         ibm-3081:d 143480.93
-15         ibm-3083:b  44269.42
-16         ibm-3083:e   5733.22
+              machine distance
+1          hp-3000/88    53.08
+2          harris-500    84.00
+3          harris-700    68.59
+4          harris-800    55.64
+5  honeywell-dps:6/92    57.81
+6  honeywell-dps:6/96   457.28
+7  honeywell-dps:8/49  3358.27
+8  honeywell-dps:8/50    70.90
+9  honeywell-dps:8/52  3735.66
+10 honeywell-dps:8/62  3548.44
+11         ibm-3033:s   251.33
+12         ibm-3033:u  3560.00
+13           ibm-3081 34503.70
+14         ibm-3081:d 30566.21
+15         ibm-3083:b  8342.78
+16         ibm-3083:e  1213.99
 \end{verbatim}
 
 Interpretation: both classic and robust distances keep most machines
@@ -665,8 +710,8 @@ CHMAX  MMAX  MMIN
 16.75  0.34  0.16 
 
 [[1]]$robust_top
- MMAX   ERP CHMAX 
-42.02 37.79 36.96 
+CHMAX  MMAX   ERP 
+83.25 31.21 26.10 
 
 
 [[2]]
@@ -679,7 +724,7 @@ CHMAX  MMAX  MMIN
 
 [[2]]$robust_top
     ERP     PRP    MMIN 
-1846.45  982.37  240.27 
+1306.96  738.67  229.00 
 
 
 [[3]]
@@ -692,7 +737,7 @@ MMAX  ERP CACH
 
 [[3]]$robust_top
    ERP   MMAX    PRP 
-368.21 211.48  59.85 
+259.32 159.27  44.41 
 \end{verbatim}
 
 \begin{itemize}

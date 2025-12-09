@@ -242,6 +242,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 <li>Machine IDs live in <code>machine</code> (formerly row names). Use them for labels, not for analysis.</li>
 </ul>
+<p>Historically, these data come from the Computer Hardware dataset describing mainframe computers from the 1970s–1980s. Each row corresponds to a specific machine model, with hardware specifications (cycle time, memory, cache, number of I/O channels) and two performance measures. The variables <code>CHMIN</code> and <code>CHMAX</code> denote the minimum and maximum number of I/O channels the system can be configured with, so they reflect scalability for small versus large installations.</p>
+<p>To make the variables more concrete, consider two machines in our subset:</p>
+<ul>
+<li><code>hp-3000/iii</code> has <code>MYCT = 175</code> ns (slower CPU), <code>MMIN = 256</code> KB and <code>MMAX = 2000</code> KB of memory, no cache and between 3 and 24 channels (<code>CHMIN = 3</code>, <code>CHMAX = 24</code>), with published performance <code>PRP = 22</code>. This is a relatively modest system in both memory and performance.</li>
+<li><code>ibm-3081</code> has <code>MYCT = 26</code> ns (much faster), <code>MMIN = 16000</code> KB and <code>MMAX = 32000</code> KB of memory, cache <code>CACH = 64</code>, between 16 and 24 channels, and <code>PRP = 465</code>. It represents a high-end configuration with far greater memory and throughput capability.</li>
+</ul>
+<p>These contrasts illustrate how larger memory, more channels and lower cycle time are associated with higher performance measures, which is precisely the multivariate relationship we summarise with PCA in later sections.</p>
+<p>Before any formal analysis, these hardware considerations give us clear prior expectations: we anticipate a strong negative association between <code>MYCT</code> and the performance variables, and positive associations between <code>MMIN</code>, <code>MMAX</code>, <code>CACH</code>, the channel counts and <code>PRP</code>/<code>ERP</code>. We also expect <code>PRP</code> and <code>ERP</code> to be highly correlated, since both are measuring the same underlying notion of computing power. In terms of PCA, a natural prior is that the leading standardized component will reflect an overall “size/performance” level combining memory, cache and performance, while a secondary component may capture differences in channel configuration relative to speed.</p>
 <p>Quick look at the machine names:</p>
 <div class="cell">
 <details class="code-fold">
@@ -410,23 +418,23 @@ attr(,&quot;logarithm&quot;)
 5         ibm-3083:b    19.11
 
 $robust
-              machine distance
-1          harris-500    81.20
-2          harris-600    71.86
-3          harris-700   110.59
-4          harris-800   147.69
-5  honeywell-dps:6/92   108.57
-6  honeywell-dps:6/96   441.63
-7  honeywell-dps:8/49  3518.21
-8  honeywell-dps:8/50    46.48
-9  honeywell-dps:8/52  3428.88
-10 honeywell-dps:8/62  2885.50
-11         ibm-3033:s   193.41
-12         ibm-3033:u  4935.84
-13           ibm-3081 41606.25
-14         ibm-3081:d 34460.12
-15         ibm-3083:b  7761.86
-16         ibm-3083:e  1086.25</code></pre>
+              machine  distance
+1          hp-3000/64    119.24
+2          hp-3000/88    298.05
+3          harris-500    199.95
+4          harris-700    142.50
+5          harris-800    193.55
+6  honeywell-dps:6/96    836.62
+7  honeywell-dps:8/49  18357.81
+8  honeywell-dps:8/50    184.89
+9  honeywell-dps:8/52  21019.73
+10 honeywell-dps:8/62  20905.97
+11         ibm-3033:s   1378.90
+12         ibm-3033:u  17778.19
+13           ibm-3081 161183.02
+14         ibm-3081:d 143480.93
+15         ibm-3083:b  44269.42
+16         ibm-3083:e   5733.22</code></pre>
 </div>
 </div>
 <p>Interpretation: both classic and robust distances keep most machines below the 97.5% cutoff (≈17.5), showing a fairly homogeneous core of machines around a single multivariate centre. A smaller group lies above the cutoff in at least one of the two metrics; these correspond to atypical combinations of cycle time, memory, cache and channels. The robust MCD distances sometimes flag a slightly different set because they estimate centre and scatter after downweighting potential outliers, which is desirable when searching for systematically atypical configurations.</p>
@@ -598,8 +606,8 @@ CHMAX  MMAX  MMIN
 16.75  0.34  0.16 
 
 [[1]]$robust_top
-CHMAX  MMAX   ERP 
-52.76 25.10 16.64 
+ MMAX   ERP CHMAX 
+42.02 37.79 36.96 
 
 
 [[2]]
@@ -611,8 +619,8 @@ CHMAX  MMAX   ERP
 14.49 14.32 12.51 
 
 [[2]]$robust_top
-   ERP    PRP   MMIN 
-866.65 601.80 192.53 
+    ERP     PRP    MMIN 
+1846.45  982.37  240.27 
 
 
 [[3]]
@@ -625,7 +633,7 @@ MMAX  ERP CACH
 
 [[3]]$robust_top
    ERP   MMAX    PRP 
-170.58 129.68  35.79 </code></pre>
+368.21 211.48  59.85 </code></pre>
 </div>
 </div>
 <ul>

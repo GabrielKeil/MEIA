@@ -68,6 +68,17 @@ summary(machines_sub)
     -   `CHMIN` min channels, `CHMAX` max channels, `PRP` published perf, `ERP` estimated perf.\
 -   Machine IDs live in `machine` (formerly row names). Use them for labels, not for analysis.
 
+Historically, these data come from the Computer Hardware dataset describing mainframe computers from the 1970s–1980s. Each row corresponds to a specific machine model, with hardware specifications (cycle time, memory, cache, number of I/O channels) and two performance measures. The variables `CHMIN` and `CHMAX` denote the minimum and maximum number of I/O channels the system can be configured with, so they reflect scalability for small versus large installations.
+
+To make the variables more concrete, consider two machines in our subset:
+
+-   `hp-3000/iii` has `MYCT = 175` ns (slower CPU), `MMIN = 256` KB and `MMAX = 2000` KB of memory, no cache and between 3 and 24 channels (`CHMIN = 3`, `CHMAX = 24`), with published performance `PRP = 22`. This is a relatively modest system in both memory and performance.
+-   `ibm-3081` has `MYCT = 26` ns (much faster), `MMIN = 16000` KB and `MMAX = 32000` KB of memory, cache `CACH = 64`, between 16 and 24 channels, and `PRP = 465`. It represents a high-end configuration with far greater memory and throughput capability.
+
+These contrasts illustrate how larger memory, more channels and lower cycle time are associated with higher performance measures, which is precisely the multivariate relationship we summarise with PCA in later sections.
+
+Before any formal analysis, these hardware considerations give us clear prior expectations: we anticipate a strong negative association between `MYCT` and the performance variables, and positive associations between `MMIN`, `MMAX`, `CACH`, the channel counts and `PRP`/`ERP`. We also expect `PRP` and `ERP` to be highly correlated, since both are measuring the same underlying notion of computing power. In terms of PCA, a natural prior is that the leading standardized component will reflect an overall “size/performance” level combining memory, cache and performance, while a secondary component may capture differences in channel configuration relative to speed.
+
 Quick look at the machine names:
 
 ```{r}
