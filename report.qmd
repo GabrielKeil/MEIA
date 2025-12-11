@@ -11,6 +11,10 @@ format:
   pdf:
     toc: true
     toc-depth: 3
+    execute:
+      echo: false
+    fontsize: 10pt
+    linestretch: 1
 number-sections: true
 execute:
   echo: true
@@ -55,7 +59,7 @@ n_vars <- ncol(machines_sub) - 1                    # count numeric variables (e
 head(machines_sub, 3)                               # peek at the first rows
 ```
 
-```{r}
+```{r, results='hide'}
 # summarize each variable (min/mean/median/max/quartiles)
 summary(machines_sub)
 ```
@@ -103,7 +107,7 @@ generalized_variance <- function(S) determinant(S, logarithm = TRUE)$modulus  # 
 
 Focus: see how skew and heavy tails affect means; compare to median/trimmed/winsor/MAD.
 
-```{r}
+```{r, results='hide'}
 num_vars <- machines_sub[ , setdiff(names(machines_sub), "machine")]  # numeric-only data
 
 stat_table <- data.frame(                              # assemble summary table
@@ -120,13 +124,13 @@ stat_table <- data.frame(                              # assemble summary table
 stat_table                                        # show table
 ```
 
-From this table we can see, for each variable, how sensitive the mean is to extreme values by comparing it with the median, the trimmed mean and the winsorized mean. Large differences between the mean and the robust summaries indicate asymmetric or heavy-tailed behaviour. The MAD column complements the standard deviation by providing a scale measure that is less influenced by atypical machines.
+Looking at the numbers, the strongest asymmetry appears in the memory and performance variables: for `MMIN`, `MMAX`, `PRP` and `ERP` the mean is roughly two to three times the median, and the 10% trimmed mean sits well below the raw mean. This points to heavy right tails driven by a few very powerful machines. `CHMIN` is also highly concentrated at small values (median 1 and MAD 0), with only a minority of models offering substantially more minimum channels. `MYCT`, `CACH` and `CHMAX` show milder but still noticeable right skew, with the mean above the median and the trimmed mean in between. Overall, the table suggests a market dominated by modest systems plus a smaller group of high-end configurations that pull the means upward.
 
 ## Covariance, total and generalized variance
 
 These give a sense of joint spread; generalized variance is the log-determinant (stable on the log scale).
 
-```{r}
+```{r, results='hide'}
 S_classic <- cov(num_vars)                          # classical covariance matrix
 total_var <- total_variance(S_classic)              # total variance (trace)
 gen_var_log <- generalized_variance(S_classic)      # log generalized variance
@@ -138,11 +142,13 @@ list(
 )                                                  # print results
 ```
 
-## Mahalanobis distances (classical)
+At the marginal level the largest variances correspond to `MMAX`, `MMIN`, `PRP` and `ERP`, confirming that memory size and performance measures are the main sources of spread in the data; `MYCT` (cycle time) also varies substantially, whereas `CHMIN` and `CACH` are comparatively more concentrated. The covariance terms are strongly positive between memory and performance variables and negative between `MYCT` and the same quantities, reflecting that faster machines tend to be those with larger memory and higher performance ratings. The total variance is therefore dominated by a common “size/performance” factor, and the generalized variance indicates that the data cloud is elongated mainly along that direction rather than being equally spread in all dimensions.
 
-Note: the squared Mahalanobis distance is approximately chi-square with `p` degrees of freedom (`p` = number of numeric variables). Using the 97.5th percentile cutoff marks points that are unusually far from the multivariate center (potential joint outliers).
+## Mahalanobis distances (classical vs robust)
 
-```{r}
+We use Mahalanobis distances to flag candidate multivariate outliers. The classical version relies on the sample mean and covariance matrix, so both the estimated centre and the shape of the ellipsoid can be strongly influenced by extreme observations. The robust version replaces these by the MCD (Minimum Covariance Determinant) estimates, which are computed from a subset of points designed to downweight outliers and better represent the bulk of the data. In both cases we compare squared distances to the 97.5% quantile of a chi-square distribution with `p` degrees of freedom (`p` = number of numeric variables), treating points above this cutoff as potential outliers.
+
+```{r, results='hide'}
 md_classic <- mahalanobis(
   num_vars,                              # data matrix
   center = colMeans(num_vars),           # classic mean vector
@@ -181,59 +187,7 @@ out_table <- list(                            # collect flagged machines
 )
 out_table                                   # show both tables
 ```
-Interpretation: both classic and robust distances keep most machines below the 97.5% cutoff (≈17.5), showing a fairly homogeneous core of machines around a single multivariate centre. A smaller group lies above the cutoff in at least one of the two metrics; these correspond to atypical combinations of cycle time, memory, cache and channels. The robust MCD distances sometimes flag a slightly different set because they estimate centre and scatter after downweighting potential outliers, which is desirable when searching for systematically atypical configurations.
-
-### Who is flagged and which variables drive them?
-
-```{r fig.height=4, fig.width=10}
-flagged_ids <- unique(c(flag_classic, flag_robust))   # union of flagged indices
-
-center_c <- colMeans(num_vars)                        # classic center
-scale_c <- sqrt(diag(S_classic))                      # classic scales (SDs)
-center_r <- cmcd$center                               # robust center
-scale_r <- sqrt(diag(cmcd$cov))                       # robust scales (SDs)
-
-# Approximate per-variable contributions: squared standardized deviations (ignores correlation structure)
-contrib_mat_classic <- t(apply(num_vars[flagged_ids, ], 1, function(x) ((x - center_c) / scale_c)^2))
-contrib_mat_robust  <- t(apply(num_vars[flagged_ids, ], 1, function(x) ((x - center_r) / scale_r)^2))
-rownames(contrib_mat_classic) <- machines_sub$machine[flagged_ids]  # label rows
-rownames(contrib_mat_robust)  <- machines_sub$machine[flagged_ids]
-
-for (i in seq_along(flagged_ids)) {                   # loop each flagged machine
-  mid <- machines_sub$machine[flagged_ids[i]]         # machine name
-  op <- par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))     # two barplots side by side
-  barplot(contrib_mat_classic[i, ], main = paste(mid, "\nclassic z^2"), las = 2, cex.names = 0.7, ylab = "contrib")  # classic contributions
-  barplot(contrib_mat_robust[i, ],  main = paste(mid, "\nrobust z^2"),  las = 2, cex.names = 0.7, ylab = "contrib")  # robust contributions
-  par(op)                                             # reset par
-}
-```
-
-Interpretation guide:
-- These barplots show which variables have the largest squared standardized deviations for each flagged machine (left: classical center/scale; right: robust center/scale).
-- Large bars point to the specs driving the outlying Mahalanobis distance (e.g., unusually high memory, channels, or performance).
-- Robust scaling tempers the influence of the bulk; if a bar stays large in both panels, that variable is a consistent driver of atypicality.
-
-Friendly readout of three examples:
-
-```{r}
-examples <- c("honeywell-dps:6/96", "ibm-3081", "honeywell-dps:8/49")  # pick 3 machines
-get_top <- function(mat, id, k = 3) {                                  # helper to grab top k contributions
-  if (!id %in% rownames(mat)) return(NA)                               # handle missing
-  sort(mat[id, ], decreasing = TRUE)[1:k]                              # largest k entries
-}
-example_top <- lapply(examples, function(id) {                         # build list for each example
-  list(
-    machine = id,                                                      # machine name
-    classic_top = round(get_top(contrib_mat_classic, id), 2),          # top classic contributors
-    robust_top = round(get_top(contrib_mat_robust, id), 2)             # top robust contributors
-  )
-})
-example_top                                                            # show the list
-```
-
-- `honeywell-dps:6/96`: dominated by very high `CHMAX` (channels), with moderate influence from `MMAX` and `ERP` in the robust view.
-- `ibm-3081`: extreme across memory (`MMIN`, `MMAX`), cache, and performance (`PRP`, `ERP`), especially in the robust scaling where these dwarfish deviations inflate the distance.
-- `honeywell-dps:8/49`: stands out for large `MMAX` and `CACH`, coupled with higher `PRP`/`ERP` relative to the robust center.
+Interpretation: both classical and robust distances keep most machines below the 97.5% cutoff (≈17.5), showing a fairly homogeneous core around a single multivariate centre. The classical rule flags 5 candidate outliers (mostly high-end IBM and Honeywell models), while the robust MCD rule flags 16, including additional high-performance and large-memory systems. The robust method is more sensitive here because it estimates centre and scatter from the bulk of the data: this tightens the covariance ellipsoid around typical machines, so extreme configurations fall more clearly beyond the chi-square threshold. In contrast, the classical covariance is inflated by the same extreme points it is trying to detect, which stretches the ellipsoid and can mask some moderate outliers.
 
 ## Summary of the preliminary analysis
 
@@ -287,44 +241,21 @@ data.frame(
 ```
 
 Interpretation:
-- Raw-scale PCA reaches ≥95% variance with `r k_raw` components; standardized PCA does so with `r k_std`. Because variables are on different units (ns vs KB vs counts vs performance), the standardized solution is the safer, more interpretable default.
-- The first standardized PC loads heavily (in magnitude) on memory and performance (`MMAX`, `MMIN`, `PRP`, `ERP`, plus `CACH`), so it summarizes overall “capacity/performance.” PC2 contrasts channel capacity (`CHMAX`) against cycle time and minimum channels, hinting at an I/O vs speed axis.
-- In other words, most of the multivariate variability can be compressed into the first few standardized components: with only `r k_std` PCs we already achieve at least 95% of the total variance, which is a substantial reduction from the original `r n_vars` dimensions.
-- Recommendation: for dimension reduction we report the standardized PCA and retain the first `r k_std` components (≥95% variance), interpreting PC1 as a scale of overall performance/memory and PC2 as a channels vs speed dimension; the remaining retained PCs mostly capture finer contrasts between already powerful machines.
+- On the original scale, `PC1` alone explains about 94% of the total variance and `PC1`–`PC2` together almost 100%, but this summary is dominated by the variables measured on larger scales (memory and performance), so it is less suitable for comparing the relative importance of all variables.
+- On the standardized scale, `PC1` explains roughly 65% of the variance and `PC1`–`PC2` together about 80%, with the first `r k_std` PCs needed to reach the 95% threshold; this represents a clear reduction from the original `r n_vars` dimensions while keeping most of the multivariate information.
+- The loadings table for the standardized PCA (next subsection) shows that `PC1` is dominated by memory and performance variables, whereas `PC2` contrasts channel capacity (`CHMAX`) with cycle time and minimum channels; we interpret these as a “capacity/performance” axis and an “I/O-versus-speed” axis, respectively.
+- For dimension reduction and interpretation we therefore focus on the standardized PCA and retain the first `r k_std` components, reading PC1 as an overall performance/memory scale and PC2 as a channels-versus-speed dimension; the remaining retained PCs mainly capture subtler contrasts among already powerful machines.
 
 ## Loadings and interpretation aids
 
-Inspect which variables drive the first PCs (signs may flip without changing interpretation).
+To make the previous interpretation concrete, we inspect which variables drive the first standardized PCs (signs may flip without changing interpretation).
 
 ```{r}
-head(pca_raw$rotation[, 1:min(3, ncol(num_vars))])  # raw loadings (first PCs)
-head(pca_std$rotation[, 1:min(3, ncol(num_vars))])  # standardized loadings (first PCs)
-```
-
-```{r}
-top_loadings <- function(rot, pcs = 1:2, k = 3) {              # helper to grab top loadings
-  do.call(rbind, lapply(pcs, function(j) {          # loop over PCs of interest
-    ord <- order(abs(rot[, j]), decreasing = TRUE)[seq_len(k)]  # top k by abs loading
-    data.frame(
-      PC = paste0("PC", j),                          # which PC
-      variable = rownames(rot)[ord],                 # variable name
-      loading = round(rot[ord, j], 3),               # signed loading
-      abs_loading = round(abs(rot[ord, j]), 3)       # absolute loading
-    )
-  }))
-}
-
-top_std <- top_loadings(pca_std$rotation, pcs = 1:2, k = 4)   # top 4 for std PCs 1-2
-top_raw <- top_loadings(pca_raw$rotation, pcs = 1:2, k = 4)   # top 4 for raw PCs 1-2
-list(                                                          # bundle for printing
-  top_loadings_standardized = top_std,                        # report std top loadings
-  top_loadings_raw = top_raw                                  # report raw top loadings
-)
+loadings_std <- round(pca_std$rotation[, 1:2], 3)   # loadings for PCs 1 and 2 (standardized PCA)
+loadings_std
 ```
 
 ## Scores plot (first two PCs)
-
-Use labels to spot grouping and extremes; standardized version is shown here.
 
 ```{r}
 scores_std <- as.data.frame(pca_std$x)                    # PCA scores (std)
@@ -337,7 +268,7 @@ text(scores_std$PC1, scores_std$PC2, labels = scores_std$machine,
      pos = 3, cex = 0.6)                                 # label points
 ```
 
-Interpretation: the standardized score plot shows where machines align along the performance/memory axis (PC1) and the channels-vs-speed axis (PC2). Machines far to the right on PC1 have higher memory and performance ratings, whereas the vertical spread reflects different channel configurations relative to cycle time. Labels make it easy to relate extreme scores back to specific models when discussing results.
+Interpretation: the standardized score plot shows where machines align along the performance/memory axis (PC1) and the channels-vs-speed axis (PC2). In our sign convention, higher-performance, higher-memory machines have large negative PC1 scores (to the left), while lower-capacity systems lie towards the right; the vertical spread reflects different channel configurations relative to cycle time. Labels make it easy to relate extreme scores back to specific models when discussing results.
 
 # Outlier experiment
 
@@ -354,6 +285,7 @@ pca_out_robust <- PcaCov(machines_out[names(num_vars)], cov.control = CovControl
 pve_out_classic <- pca_out_classic$sdev^2 / sum(pca_out_classic$sdev^2)  # PVE classic
 pve_out_robust <- pca_out_robust@eigenvalues / sum(pca_out_robust@eigenvalues)  # PVE robust
 
+```{r, results='hide'}
 data.frame(
   component = seq_along(pve_out_classic),                 # component index
   classic_pct = round(pve_out_classic * 100, 2),          # classic PVE (%)
@@ -361,11 +293,11 @@ data.frame(
 )
 ```
 
-This table allows us to compare how the injected outlier redistributes the variance across components under the classical and robust approaches. In the classical PCA, the first eigenvalue typically inflates and captures a very large share of the variance because the outlier dominates the covariance structure. In contrast, the robust eigenvalues stay closer to what we observed without the outlier, meaning that the bulk geometry is preserved.
+This comparison of variance shares shows that the injected outlier substantially changes the classical PCA: the proportion of variance explained by the leading components is redistributed (roughly 58% and 40% for the first two PCs, rather than about 94% and 6% in the uncontaminated analysis), indicating that the first axes are now driven by the extreme point. In practical terms, the classical PCs are no longer summarising the variability among typical machines but are instead oriented to separate the modified `hp-3000/64` from the rest. In contrast, the robust PCA eigenvalues remain close to those obtained without the outlier (around 92% for the first component and 7% for the second), so the bulk geometry of the original data is largely preserved.
 
 ## Visual comparison: scores
 
-Outlier effect: in classical PCA, the first axis often aligns with the extreme point; robust PCA should stay closer to the bulk structure.
+Outlier effect: in classical PCA, the first axes are strongly influenced by the extreme point; robust PCA should stay closer to the bulk structure.
 
 ```{r}
 par(mfrow = c(1, 2))                                       # two plots
@@ -381,11 +313,15 @@ text(pca_out_robust@scores[,1], pca_out_robust@scores[,2],
 par(mfrow = c(1, 1))                                       # reset layout
 ```
 
+In the classical scores plot with the outlier, the modified `hp-3000/64` appears in the far upper-right quadrant with extremely large `PC1` and `PC2` scores, while high-end IBM machines (such as `ibm-3081` and `ibm-3083:b`) lie far to the upper left with large positive `PC2` and large negative `PC1`. The remaining machines form a central cloud that is visually compressed by comparison, indicating that the first classical components are now mainly separating these few extreme configurations from the rest of the sample. In the robust scores plot, the modified observation is still clearly separated from the bulk, but the overall cloud of machines—and the orientation of the principal directions—remains much closer to the uncontaminated PCA, so the robust components continue to describe variability among typical configurations rather than being dominated by the single injected outlier.
+
 ### Distance diagnostics (robust PCA)
 
 ```{r}
 plot(pca_out_robust)  # outlier map: orthogonal vs score distances
 ```
+
+In this outlier map the horizontal axis shows the score distance, which measures how far an observation lies within the PCA subspace (essentially the length of its score vector after scaling by the robust eigenvalues). The vertical axis shows the orthogonal distance, which measures how far the observation lies from the PCA subspace itself (the norm of the reconstruction residual). Points with small score and orthogonal distances belong to the central cloud. Observations with large score distance but small orthogonal distance are leverage points within the PCA structure, whereas those with large orthogonal distance are “off-plane” outliers that are poorly represented by the retained components. The modified `hp-3000/64` appears in the upper part of this plot, confirming that it is a clear outlier relative to the robust PCA model.
 
 # Decisions
 
