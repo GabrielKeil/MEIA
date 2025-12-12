@@ -1,6 +1,6 @@
 ---
 title: "PCA and Outlier Analysis on Machines Data"
-author: Grupo
+author: Grupo 14
 date: today
 format:
   html:
@@ -14,7 +14,11 @@ format:
     execute:
       echo: false
     fontsize: 10pt
-    linestretch: 1
+    linestretch: 0.95
+    geometry: margin=1in
+    header-includes:
+      - \usepackage{etoolbox}
+      - \apptocmd{\tableofcontents}{\clearpage}{}{}
 number-sections: true
 execute:
   echo: true
@@ -35,11 +39,11 @@ This report walks through an analysis of a subset of the `machines` data from th
 
 # Study plan (at a glance)
 
-1)  Inspect the data: structure, variable meaning, rough scales.\
-2)  Classical and robust summaries to see skew/tails and dependence (covariance, distances).\
-3)  PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.\
-4)  Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.\
-5)  Conclude and state a recommendation for which PCA to report and why.
+1. Inspect the data: structure, variable meaning, rough scales.
+2. Classical and robust summaries to see skew/tails and dependence (covariance, distances).
+3. PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.
+4. Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.
+5. Conclude and state a recommendation for which PCA to report and why.
 
 # Setup and data
 
@@ -57,6 +61,17 @@ n_obs <- nrow(machines_sub)                         # count observations
 n_vars <- ncol(machines_sub) - 1                    # count numeric variables (exclude machine names)
 
 head(machines_sub, 3)                               # peek at the first rows
+```
+
+```{r, include=FALSE}
+# Helper functions for trimmed/winsorized means and total/generalized variance (hidden)
+winsor_mean <- function(x, probs = c(0.05, 0.95)) {
+  qs <- quantile(x, probs, names = FALSE)           # lower/upper cutoffs
+  mean(pmin(pmax(x, qs[1]), qs[2]))                 # clamp extremes then average
+}
+
+total_variance <- function(S) sum(diag(S))          # sum of variances (trace)
+generalized_variance <- function(S) determinant(S, logarithm = TRUE)$modulus  # log-determinant
 ```
 
 ```{r, results='hide'}
@@ -89,25 +104,13 @@ Quick look at the machine names:
 head(machines_sub$machine, 5)                       # show first few machine IDs
 ```
 
-Helper functions for trimmed/winsorized means and total/generalized variance:
-
-```{r}
-winsor_mean <- function(x, probs = c(0.05, 0.95)) {
-  qs <- quantile(x, probs, names = FALSE)           # lower/upper cutoffs
-  mean(pmin(pmax(x, qs[1]), qs[2]))                 # clamp extremes then average
-}
-
-total_variance <- function(S) sum(diag(S))          # sum of variances (trace)
-generalized_variance <- function(S) determinant(S, logarithm = TRUE)$modulus  # log-determinant
-```
-
 # Exploratory summaries
 
 ## Classical vs robust location/scale
 
 Focus: see how skew and heavy tails affect means; compare to median/trimmed/winsor/MAD.
 
-```{r, results='hide'}
+```{r, results='show'}
 num_vars <- machines_sub[ , setdiff(names(machines_sub), "machine")]  # numeric-only data
 
 stat_table <- data.frame(                              # assemble summary table
@@ -130,7 +133,7 @@ Looking at the numbers, the strongest asymmetry appears in the memory and perfor
 
 These give a sense of joint spread; generalized variance is the log-determinant (stable on the log scale).
 
-```{r, results='hide'}
+```{r, results='show'}
 S_classic <- cov(num_vars)                          # classical covariance matrix
 total_var <- total_variance(S_classic)              # total variance (trace)
 gen_var_log <- generalized_variance(S_classic)      # log generalized variance

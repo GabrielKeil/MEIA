@@ -6,8 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Grupo">
-<meta name="dcterms.date" content="2025-12-11">
+<meta name="author" content="Grupo 14">
+<meta name="dcterms.date" content="2025-12-12">
 
 <title>PCA and Outlier Analysis on Machines Data</title>
 <style>
@@ -116,7 +116,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions"><span class="header-section-number">9</span> Conclusions</a></li>
   <li><a href="#bibliography" id="toc-bibliography" class="nav-link" data-scroll-target="#bibliography"><span class="header-section-number">10</span> Bibliography</a></li>
   </ul>
-<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="../../../Programação/estatistica/projecto-1/report.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="report.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
 </div>
 <main class="content" id="quarto-document-content">
 
@@ -132,14 +132,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Grupo </p>
+             <p>Grupo 14 </p>
           </div>
   </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 11, 2025</p>
+      <p class="date">December 12, 2025</p>
     </div>
   </div>
   
@@ -166,14 +166,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="study-plan-at-a-glance" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Study plan (at a glance)</h1>
 <ol type="1">
-<li>Inspect the data: structure, variable meaning, rough scales.<br>
-</li>
-<li>Classical and robust summaries to see skew/tails and dependence (covariance, distances).<br>
-</li>
-<li>PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.<br>
-</li>
-<li>Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.<br>
-</li>
+<li>Inspect the data: structure, variable meaning, rough scales.</li>
+<li>Classical and robust summaries to see skew/tails and dependence (covariance, distances).</li>
+<li>PCA on raw vs standardized variables; compare variance explained and loadings; pick components reaching 95%.</li>
+<li>Inject one outlier and compare classical vs robust PCA to illustrate sensitivity.</li>
 <li>Conclude and state a recommendation for which PCA to report and why.</li>
 </ol>
 </section>
@@ -243,19 +239,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>[1] "hp-3000/64"  "hp-3000/88"  "hp-3000/iii" "harris-100"  "harris-300" </code></pre>
 </div>
 </div>
-<p>Helper functions for trimmed/winsorized means and total/generalized variance:</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>winsor_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.95</span>)) {</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  qs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x, probs, <span class="at">names =</span> <span class="cn">FALSE</span>)           <span class="co"># lower/upper cutoffs</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="fu">pmin</span>(<span class="fu">pmax</span>(x, qs[<span class="dv">1</span>]), qs[<span class="dv">2</span>]))                 <span class="co"># clamp extremes then average</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>total_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">sum</span>(<span class="fu">diag</span>(S))          <span class="co"># sum of variances (trace)</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>generalized_variance <span class="ot">&lt;-</span> <span class="cf">function</span>(S) <span class="fu">determinant</span>(S, <span class="at">logarithm =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>modulus  <span class="co"># log-determinant</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-</div>
 </section>
 <section id="exploratory-summaries" class="level1" data-number="5">
 <h1 data-number="5"><span class="header-section-number">5</span> Exploratory summaries</h1>
@@ -265,21 +248,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>num_vars <span class="ot">&lt;-</span> machines_sub[ , <span class="fu">setdiff</span>(<span class="fu">names</span>(machines_sub), <span class="st">"machine"</span>)]  <span class="co"># numeric-only data</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>stat_table <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(                              <span class="co"># assemble summary table</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable =</span> <span class="fu">names</span>(num_vars),                     <span class="co"># variable name</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean =</span> <span class="fu">sapply</span>(num_vars, mean),                  <span class="co"># arithmetic mean</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">median =</span> <span class="fu">sapply</span>(num_vars, median),              <span class="co"># median</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">trimmed_mean =</span> <span class="fu">sapply</span>(num_vars, mean, <span class="at">trim =</span> <span class="fl">0.1</span>),  <span class="co"># 10% trimmed mean</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">winsor_mean =</span> <span class="fu">sapply</span>(num_vars, winsor_mean),    <span class="co"># 5–95 winsorized mean</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sd =</span> <span class="fu">sapply</span>(num_vars, sd),                      <span class="co"># standard deviation</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">var =</span> <span class="fu">sapply</span>(num_vars, var),                    <span class="co"># variance</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">mad =</span> <span class="fu">sapply</span>(num_vars, mad)                     <span class="co"># median absolute deviation</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>stat_table                                        <span class="co"># show table</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>num_vars <span class="ot">&lt;-</span> machines_sub[ , <span class="fu">setdiff</span>(<span class="fu">names</span>(machines_sub), <span class="st">"machine"</span>)]  <span class="co"># numeric-only data</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>stat_table <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(                              <span class="co"># assemble summary table</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">variable =</span> <span class="fu">names</span>(num_vars),                     <span class="co"># variable name</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean =</span> <span class="fu">sapply</span>(num_vars, mean),                  <span class="co"># arithmetic mean</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">median =</span> <span class="fu">sapply</span>(num_vars, median),              <span class="co"># median</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">trimmed_mean =</span> <span class="fu">sapply</span>(num_vars, mean, <span class="at">trim =</span> <span class="fl">0.1</span>),  <span class="co"># 10% trimmed mean</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">winsor_mean =</span> <span class="fu">sapply</span>(num_vars, winsor_mean),    <span class="co"># 5–95 winsorized mean</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sd =</span> <span class="fu">sapply</span>(num_vars, sd),                      <span class="co"># standard deviation</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">var =</span> <span class="fu">sapply</span>(num_vars, var),                    <span class="co"># variance</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">mad =</span> <span class="fu">sapply</span>(num_vars, mad)                     <span class="co"># median absolute deviation</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>stat_table                                        <span class="co"># show table</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["mean"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["median"],"name":[3],"type":["int"],"align":["right"]},{"label":["trimmed_mean"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["winsor_mean"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["sd"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["var"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["mad"],"name":[8],"type":["dbl"],"align":["right"]}],"data":[{"1":"MYCT","2":"322.707317","3":"300","4":"276.575758","5":"312.951220","6":"301.747845","7":"9.105176e+04","8":"237.2160","_rn_":"MYCT"},{"1":"MMIN","2":"2435.121951","3":"1000","4":"1542.787879","5":"2050.341463","6":"3563.887261","7":"1.270129e+07","8":"1103.0544","_rn_":"MMIN"},{"1":"MMAX","2":"9811.707317","3":"4000","4":"8212.121212","5":"9829.268293","6":"10584.538663","7":"1.120325e+08","8":"4447.8000","_rn_":"MMAX"},{"1":"CACH","2":"10.414634","3":"4","4":"6.151515","5":"10.414634","6":"17.915043","7":"3.209488e+02","8":"5.9304","_rn_":"CACH"},{"1":"CHMIN","2":"3.170732","3":"1","4":"2.484848","5":"2.878049","6":"3.390446","7":"1.149512e+01","8":"0.0000","_rn_":"CHMIN"},{"1":"CHMAX","2":"20.390244","3":"20","4":"16.606061","5":"18.731707","6":"22.381776","7":"5.009439e+02","8":"20.7564","_rn_":"CHMAX"},{"1":"PRP","2":"80.000000","3":"38","4":"54.575758","5":"71.048780","6":"108.868728","7":"1.185240e+04","8":"32.6172","_rn_":"PRP"},{"1":"ERP","2":"69.341463","3":"30","4":"50.393939","5":"62.829268","6":"84.751286","7":"7.182780e+03","8":"17.7912","_rn_":"ERP"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
 </div>
 <p>Looking at the numbers, the strongest asymmetry appears in the memory and performance variables: for <code>MMIN</code>, <code>MMAX</code>, <code>PRP</code> and <code>ERP</code> the mean is roughly two to three times the median, and the 10% trimmed mean sits well below the raw mean. This points to heavy right tails driven by a few very powerful machines. <code>CHMIN</code> is also highly concentrated at small values (median 1 and MAD 0), with only a minority of models offering substantially more minimum channels. <code>MYCT</code>, <code>CACH</code> and <code>CHMAX</code> show milder but still noticeable right skew, with the mean above the median and the trimmed mean in between. Overall, the table suggests a market dominated by modest systems plus a smaller group of high-end configurations that pull the means upward.</p>
 </section>
@@ -289,16 +279,45 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>S_classic <span class="ot">&lt;-</span> <span class="fu">cov</span>(num_vars)                          <span class="co"># classical covariance matrix</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>total_var <span class="ot">&lt;-</span> <span class="fu">total_variance</span>(S_classic)              <span class="co"># total variance (trace)</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>gen_var_log <span class="ot">&lt;-</span> <span class="fu">generalized_variance</span>(S_classic)      <span class="co"># log generalized variance</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">covariance_matrix =</span> S_classic,                  <span class="co"># covariance matrix</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_variance =</span> total_var,                     <span class="co"># total variance</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">generalized_variance_log =</span> gen_var_log          <span class="co"># log generalized variance</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)                                                  <span class="co"># print results</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>S_classic <span class="ot">&lt;-</span> <span class="fu">cov</span>(num_vars)                          <span class="co"># classical covariance matrix</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>total_var <span class="ot">&lt;-</span> <span class="fu">total_variance</span>(S_classic)              <span class="co"># total variance (trace)</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>gen_var_log <span class="ot">&lt;-</span> <span class="fu">generalized_variance</span>(S_classic)      <span class="co"># log generalized variance</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">covariance_matrix =</span> S_classic,                  <span class="co"># covariance matrix</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_variance =</span> total_var,                     <span class="co"># total variance</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">generalized_variance_log =</span> gen_var_log          <span class="co"># log generalized variance</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>)                                                  <span class="co"># print results</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+<div class="cell-output cell-output-stdout">
+<pre><code>$covariance_matrix
+               MYCT         MMIN         MMAX         CACH        CHMIN
+MYCT     91051.7622  -432377.463  -1609363.49  -2092.07561  -440.823780
+MMIN   -432377.4634 12701292.410  24690893.74  41241.87317  8756.653659
+MMAX  -1609363.4878 24690893.737 112032458.71 138025.22439 17389.951220
+CACH     -2092.0756    41241.873    138025.22    320.94878    33.402439
+CHMIN     -440.8238     8756.654     17389.95     33.40244    11.495122
+CHMAX    -2618.3579     3924.551     92296.42    110.28415     4.831707
+PRP     -15881.2000   359417.800    968283.00   1556.55000   277.225000
+ERP     -11618.7226   263724.107    820483.00   1253.72988   187.415244
+             CHMAX        PRP         ERP
+MYCT  -2618.357927 -15881.200 -11618.7226
+MMIN   3924.551220 359417.800 263724.1073
+MMAX  92296.417073 968283.000 820483.0024
+CACH    110.284146   1556.550   1253.7299
+CHMIN     4.831707    277.225    187.4152
+CHMAX   500.943902    442.150    481.2134
+PRP     442.150000  11852.400   8981.1000
+ERP     481.213415   8981.100   7182.7805
+
+$total_variance
+[1] 124844671
+
+$generalized_variance_log
+[1] 67.78829
+attr(,"logarithm")
+[1] TRUE</code></pre>
+</div>
 </div>
 <p>At the marginal level the largest variances correspond to <code>MMAX</code>, <code>MMIN</code>, <code>PRP</code> and <code>ERP</code>, confirming that memory size and performance measures are the main sources of spread in the data; <code>MYCT</code> (cycle time) also varies substantially, whereas <code>CHMIN</code> and <code>CACH</code> are comparatively more concentrated. The covariance terms are strongly positive between memory and performance variables and negative between <code>MYCT</code> and the same quantities, reflecting that faster machines tend to be those with larger memory and higher performance ratings. The total variance is therefore dominated by a common “size/performance” factor, and the generalized variance indicates that the data cloud is elongated mainly along that direction rather than being equally spread in all dimensions.</p>
 </section>
